@@ -1,0 +1,187 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "debian-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Admin {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// model Sales {
+//   id        String  @id @default(uuid())
+//   agent_id  String
+//   agent     Agent   @relation(fields: [agent_id], references: [id])
+//   client_id String
+//   client    Clients @relation(fields: [client_id], references: [id])
+
+//   amount    Float
+//   createdAt DateTime @default(now())
+//   updatedAt DateTime @updatedAt
+// }
+
+model Agent {
+  id                 String         @id @default(uuid())
+  email              String         @unique
+  password           String
+  name               String
+  address            String
+  phone              String
+  profile            String
+  type_of_employment String
+  createdAt          DateTime       @default(now())
+  updatedAt          DateTime       @updatedAt
+  AgentClients       AgentClients[]
+  // AgentSales         Sales[]
+}
+
+model AgentClients {
+  id        String  @id @default(uuid())
+  agent_id  String
+  agent     Agent   @relation(fields: [agent_id], references: [id])
+  client_id String
+  client    Clients @relation(fields: [client_id], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+enum authProviderProps {
+  google
+  manual
+}
+
+model Clients {
+  id                String              @id @default(uuid())
+  shop_name         String?
+  qr_id             String?             @unique
+  owner_name        String
+  address           String?
+  phone             String?
+  email             String              @unique
+  logo              String?
+  googleAPI         String?
+  ipAddress         String
+  contractTime      DateTime
+  authProvider      authProviderProps?
+  password          String
+  isActive          Boolean
+  QRCodes           QRCodes?
+  // ShopSales      Sales[]
+  AgentClients      AgentClients[]
+  ClientPlan        ClientPlans[]
+  ClientPayments    ClientPayments[]
+  ClientCoupon      CouponClients[]
+  SubscriptionPlans SubscriptionPlans[]
+}
+
+enum QRCodesStatus {
+  Active
+  Inactive
+}
+
+model QRCodes {
+  id          String   @id @default(uuid())
+  public_key  String   @unique
+  private_key String   @unique
+  client_id   String?  @unique
+  // status      QRCodesStatus
+  // amount      Int
+  Client      Clients? @relation(fields: [client_id], references: [id])
+}
+
+model ClientPlans {
+  id        String   @id @default(uuid())
+  client_id String
+  client    Clients  @relation(fields: [client_id], references: [id])
+  plan      Plans    @relation(fields: [plan_id], references: [id])
+  plan_id   String
+  isActive  Boolean
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Plans {
+  id          String        @id @default(uuid())
+  title       String
+  price       Decimal
+  level       Int
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  ClientPlans ClientPlans[]
+}
+
+model ClientPayments {
+  id             String   @id @default(uuid())
+  client_id      String
+  client         Clients  @relation(fields: [client_id], references: [id])
+  amount         Decimal
+  payment_date   DateTime @default(now())
+  payment_type   String // e.g., "credit_card", "bank_transfer"
+  status         String   @default("pending") // "completed", "pending", "failed"
+  invoice_id     String?
+  transaction_id String?
+
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+  SubscriptionPlans SubscriptionPlans[]
+}
+
+model SubscriptionPlans {
+  id                 String         @id @default(uuid())
+  client_id          String
+  client_payments_id String
+  client_payment     ClientPayments @relation(fields: [client_payments_id], references: [id])
+  client             Clients        @relation(fields: [client_id], references: [id])
+  expirationDate     DateTime
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model CouponClients {
+  id        String   @id @default(uuid())
+  client_id String
+  coupon_id String
+  is_used   Boolean
+  used_at   DateTime
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  Coupon    Coupon[]
+  Clients   Clients  @relation(fields: [client_id], references: [id])
+}
+
+model Coupon {
+  id            String         @id @default(uuid())
+  code          String
+  discountType  CouponCodeType
+  validFrom     DateTime
+  validTill     DateTime
+  maxDiscount   Int?
+  minOrderValue Int?
+  discountValue Int
+
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  CouponClients   CouponClients? @relation(fields: [couponClientsId], references: [id])
+  couponClientsId String?
+}
+
+enum CouponCodeType {
+  Fixed
+  Discount
+}
