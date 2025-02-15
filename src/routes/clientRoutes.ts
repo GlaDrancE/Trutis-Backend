@@ -1,5 +1,5 @@
 import { RequestHandler, Router } from 'express'
-import { ClientLogin, CreateClient, DeleteClient, GetClient, GetClients, SubPlans, UpdateClient } from '../controllers/clientController';
+import { ClientLogin, CreateClient, DeleteClient, GetClient, GetClients, GetCoupons, SubPlans, UpdateClient } from '../controllers/clientController';
 import { upload } from '../utils/multer'
 import Caching from '../utils/caching';
 import { VerifyOtp } from '../controllers/otpController';
@@ -15,3 +15,7 @@ clientRoutes.put('/clients/:id', upload.single('logo'), UpdateClient as RequestH
 clientRoutes.delete('/clients/:id', DeleteClient as RequestHandler)
 clientRoutes.get('/forms/:id', DeleteClient as RequestHandler)
 export default clientRoutes;
+
+// Coupons routes
+
+clientRoutes.get("/clients/coupons/:id", GetCoupons as RequestHandler)

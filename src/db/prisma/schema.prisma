@@ -65,30 +65,6 @@ enum authProviderProps {
   manual
 }
 
-model Clients {
-  id                String              @id @default(uuid())
-  shop_name         String?
-  qr_id             String?             @unique
-  owner_name        String
-  address           String?
-  phone             String?
-  email             String              @unique
-  logo              String?
-  googleAPI         String?
-  ipAddress         String
-  contractTime      DateTime
-  authProvider      authProviderProps?
-  password          String
-  isActive          Boolean
-  QRCodes           QRCodes?
-  // ShopSales      Sales[]
-  AgentClients      AgentClients[]
-  ClientPlan        ClientPlans[]
-  ClientPayments    ClientPayments[]
-  ClientCoupon      CouponClients[]
-  SubscriptionPlans SubscriptionPlans[]
-}
-
 enum QRCodesStatus {
   Active
   Inactive
@@ -102,6 +78,107 @@ model QRCodes {
   // status      QRCodesStatus
   // amount      Int
   Client      Clients? @relation(fields: [client_id], references: [id])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Clients {
+  id                String              @id @default(uuid())
+  shop_name         String?
+  qr_id             String?             @unique
+  owner_name        String
+  address           String?
+  phone             String?
+  email             String              @unique
+  logo              String?
+  googleAPI         String?
+  // publicId          String?
+  ipAddress         String
+  contractTime      DateTime
+  authProvider      authProviderProps?
+  password          String
+  isActive          Boolean
+  QRCodes           QRCodes?
+  minOrderValue     Int?
+  maxDiscount       Int?
+  couponValidity    Int?
+  AgentClients      AgentClients[]
+  ClientPlan        ClientPlans[]
+  ClientPayments    ClientPayments[]
+  ClientCoupon      CouponClients[]
+  SubscriptionPlans SubscriptionPlans[]
+}
+
+model Coupons {
+  id            String   @id @default(uuid())
+  code          String
+  validFrom     DateTime @default(dbgenerated("NOW() + interval '1 day'"))
+  validTill     DateTime
+  maxDiscount   Int?
+  minOrderValue Int?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  CustomersCoupons CouponCustomers[]
+  CouponClients    CouponClients[]
+}
+
+// Customers of the shops who have used the coupons
+model Customers {
+  id        String   @id @default(uuid())
+  email     String
+  name      String
+  phone     String
+  DOB       DateTime
+  ratings   Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  CustomersCoupons CouponCustomers[]
+  Points           Points?
+}
+
+model CouponClients {
+  id                     String                   @id @default(uuid())
+  clientId               String
+  couponId               String
+  isUsed                 Boolean
+  usedAt                 DateTime
+  createdAt              DateTime                 @default(now())
+  updatedAt              DateTime                 @updatedAt
+  Coupon                 Coupons                  @relation(fields: [couponId], references: [id])
+  Clients                Clients                  @relation(fields: [clientId], references: [id])
+  CouponClientsCustomers CouponClientsCustomers[]
+}
+
+model CouponCustomers {
+  id                     String                   @id @default(uuid())
+  couponId               String
+  customersId            String?
+  // CustomerReview         Customers                @relation(fields: [customersReviewId], references: [id])
+  Coupons                Coupons                  @relation(fields: [couponId], references: [id])
+  createdAt              DateTime                 @default(now())
+  updatedAt              DateTime                 @updatedAt
+  CouponClientsCustomers CouponClientsCustomers[]
+  Customers              Customers?               @relation(fields: [customersId], references: [id])
+}
+
+model CouponClientsCustomers {
+  id               String          @id @default(uuid())
+  couponClientID   String
+  couponCustomerId String
+  CouponClient     CouponClients   @relation(fields: [couponClientID], references: [id])
+  CouponCustomer   CouponCustomers @relation(fields: [couponCustomerId], references: [id])
+}
+
+model Points {
+  id         String    @id @default(uuid())
+  customerId String    @unique
+  points     Int
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  Customers  Customers @relation(fields: [customerId], references: [id])
 }
 
 model ClientPlans {
@@ -151,37 +228,4 @@ model SubscriptionPlans {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-}
-
-model CouponClients {
-  id        String   @id @default(uuid())
-  client_id String
-  coupon_id String
-  is_used   Boolean
-  used_at   DateTime
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  Coupon    Coupon[]
-  Clients   Clients  @relation(fields: [client_id], references: [id])
-}
-
-model Coupon {
-  id            String         @id @default(uuid())
-  code          String
-  discountType  CouponCodeType
-  validFrom     DateTime
-  validTill     DateTime
-  maxDiscount   Int?
-  minOrderValue Int?
-  discountValue Int
-
-  createdAt       DateTime       @default(now())
-  updatedAt       DateTime       @updatedAt
-  CouponClients   CouponClients? @relation(fields: [couponClientsId], references: [id])
-  couponClientsId String?
-}
-
-enum CouponCodeType {
-  Fixed
-  Discount
 }

@@ -392,7 +392,6 @@ export const UpdateClient = async (req: Request, res: Response): Promise<Respons
                 googleAPI: googleAPI
             },
         });
-        console.log(updatedClient)
 
         res.status(200).send("Client Updated");
     } catch (error) {
@@ -482,5 +481,29 @@ export const CreatePaymentOrder = async (req: Request, res: Response) => {
         });
     } catch (error) {
         res.status(500).send(error);
+    }
+}
+
+
+export const GetCoupons = async (req: Request, res: Response) => {
+    try {
+        const { id } = req.params;
+        const coupons = await prisma.couponClients.findMany({
+            where: {
+                clientId: id
+            },
+            include: {
+                Coupon: {
+                    include: {
+                        CouponClients: true
+                    }
+                }
+            }
+        });
+        console.log(coupons)
+        res.status(200).json(coupons);
+    } catch (error) {
+        console.error('Error fetching coupons:', error);
+        res.status(500).json({ error: 'Failed to fetch coupons' });
     }
 }
