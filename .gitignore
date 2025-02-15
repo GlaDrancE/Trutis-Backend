@@ -50,3 +50,6 @@ jspm_packages/
 
 # macOS system files
 .DS_Store
+
+# Google Cloud Storage
+trutis-0ba12a172f5a.json
