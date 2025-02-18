@@ -58,7 +58,6 @@ export const GetClient = async (req: Request, res: Response) => {
                 }
             }
         })
-        console.log(client)
         if (!client) {
             return res.status(404).send("Client Not Found")
         }
@@ -123,16 +122,18 @@ export const ClientLogin = async (req: Request, res: Response) => {
 
 export const CreateInitClient = async (req: Request, res: Response): Promise<Response | void> => {
     try {
-        const { email, owner_name, password, logo, ipAddress, contractTime, authProvider } = req.body;
+        const { email, owner_name, password, address, logo, ipAddress, contractTime, authProvider, shop_name } = req.body;
 
         // Validate input data
-        if (!email || !owner_name || !password) {
+        if (!email || !owner_name || !password || !address || !shop_name) {
             return res.status(400).json({
                 error: "Missing required fields",
                 missingFields: [
                     !email && "email",
                     !owner_name && "owner_name",
-                    !password && "password"
+                    !password && "password",
+                    !address && "address",
+                    !shop_name && "shop_name"
                 ].filter(Boolean)
             });
         }
@@ -150,6 +151,8 @@ export const CreateInitClient = async (req: Request, res: Response): Promise<Res
             data: {
                 email: email,
                 owner_name: owner_name,
+                shop_name: shop_name,
+                address: address,
                 password: await bcrypt.hash(password, 10),
                 isActive: false,
                 logo: logo,
@@ -164,7 +167,7 @@ export const CreateInitClient = async (req: Request, res: Response): Promise<Res
             return res.status(400).send("Failed to load token")
         }
         const token = jwt.sign({ userId: newClient.id }, JWT_SECRET, { expiresIn: '1d' })
-        res.status(201).json({ token: token });
+        res.status(201).json({ token: token, userId: newClient.id });
     } catch (error) {
         console.error("Something went wrong: ", error);
         res.status(500).send("Internal server error");
@@ -189,7 +192,6 @@ export const CreateGoogleClient = async (req: Request, res: Response): Promise<R
             audience: process.env.GOOGLE_CLIENT_ID
         })
         const payload = ticket.getPayload();
-        console.log(payload)
         if (!payload) {
             return res.status(400).send("Failed to load token")
         }
@@ -348,6 +350,46 @@ export const CreateClient = async (req: Request, res: Response): Promise<Respons
     }
 };
 
+export const UpdateStaff = async (req: Request, res: Response): Promise<Response | void> => {
+    try {
+        const { client_id, staff_id, staff_password, staffStatus } = req.body;
+        const client = await prisma.clients.findFirst({
+            where: {
+                id: client_id
+            }
+        })
+        if (!client) {
+            return res.status(404).send("Client not found");
+        }
+        if (!staff_id && !staff_password) {
+            await prisma.clients.update({
+                where: {
+                    id: client_id
+                },
+                data: {
+                    staffStatus: staffStatus
+                }
+            })
+        }
+
+        const staff = await prisma.clients.update({
+            where: {
+                id: client_id
+            },
+            data: {
+                staffId: staff_id,
+                staffPassword: staff_password
+            }
+        })
+        if (!staff) {
+            return res.status(400).send("Failed to create staff");
+        }
+        res.status(201).json({ msg: "Staff created", staff_id: staff.id });
+    } catch (error) {
+        console.log(error)
+        res.status(500).send("Internal Server Error");
+    }
+}
 // Update a client
 export const UpdateClient = async (req: Request, res: Response): Promise<Response | void> => {
     try {
@@ -500,10 +542,10 @@ export const GetCoupons = async (req: Request, res: Response) => {
                 }
             }
         });
-        console.log(coupons)
         res.status(200).json(coupons);
     } catch (error) {
         console.error('Error fetching coupons:', error);
         res.status(500).json({ error: 'Failed to fetch coupons' });
     }
 }
+

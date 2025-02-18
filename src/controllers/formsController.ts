@@ -11,6 +11,14 @@ export const storeCustomers = async (req: Request, res: Response): Promise<Respo
         const { clientId, code, email, name, phone, DOB, ratings } = req.body
         const reviewImage = req.file;
         console.log(req.file)
+        if (reviewImage) {
+            const imageUrl = await uploadFileToGCS(reviewImage, `reviews-images/sample-image`)
+            console.log("Image URL: ", imageUrl)
+            return res.status(200).send({
+                message: "Image uploaded successfully",
+                imageUrl: imageUrl
+            })
+        }
 
         if (!clientId || !email || !name || !phone || !DOB || !ratings) {
             return res.status(400).send({
@@ -112,10 +120,7 @@ export const storeCustomers = async (req: Request, res: Response): Promise<Respo
         if (!coupon) {
             return res.status(400).send("Failed to create coupon");
         }
-        if (reviewImage) {
-            const imageUrl = await uploadFileToGCS(reviewImage, `${customer.id}-${Date.now()}.jpg`)
-            console.log("Image URL: ", imageUrl)
-        }
+
         res.status(201).send("Coupon created successfully")
 
     } catch (error) {

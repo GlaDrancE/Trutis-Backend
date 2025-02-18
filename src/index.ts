@@ -7,6 +7,7 @@ import agentRoutes from "./routes/agentRoutes";
 import clientRoutes from "./routes/clientRoutes";
 import adminRoutes from "./routes/adminRoutes";
 import formRoutes from "./routes/formRoutes";
+import paymentRoutes from "./routes/paymentRoutes";
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -27,6 +28,8 @@ app.use("/api", agentRoutes);
 app.use("/api", adminRoutes);
 app.use("/api", clientRoutes);
 app.use("/api", formRoutes);
+app.use("/api", paymentRoutes);
+
 
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);

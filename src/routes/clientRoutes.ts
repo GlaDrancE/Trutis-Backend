@@ -1,8 +1,9 @@
 import { RequestHandler, Router } from 'express'
-import { ClientLogin, CreateClient, DeleteClient, GetClient, GetClients, GetCoupons, SubPlans, UpdateClient } from '../controllers/clientController';
+import { ClientLogin, CreateClient, DeleteClient, GetClient, GetClients, GetCoupons, SubPlans, UpdateClient, UpdateStaff } from '../controllers/clientController';
 import { upload } from '../utils/multer'
 import Caching from '../utils/caching';
-import { VerifyOtp } from '../controllers/otpController';
+import { VerifyOtp, GenerateOtp } from '../controllers/otpController';
+
 // import { CacheClient } from '../middlewares/Caching';
 const clientRoutes = Router();
 
@@ -19,3 +20,10 @@ export default clientRoutes;
 // Coupons routes
 
 clientRoutes.get("/clients/coupons/:id", GetCoupons as RequestHandler)
+
+// Staff routes
+clientRoutes.post("/client/create-staff", UpdateStaff as RequestHandler)
+
+// OTP Routes
+clientRoutes.post("/client/generate-otp", GenerateOtp as RequestHandler)
+clientRoutes.post("/client/verify-otp", VerifyOtp as RequestHandler)

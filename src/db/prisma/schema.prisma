@@ -83,30 +83,33 @@ model QRCodes {
 }
 
 model Clients {
-  id                String              @id @default(uuid())
-  shop_name         String?
-  qr_id             String?             @unique
-  owner_name        String
-  address           String?
-  phone             String?
-  email             String              @unique
-  logo              String?
-  googleAPI         String?
+  id             String             @id @default(uuid())
+  shop_name      String?
+  qr_id          String?            @unique
+  owner_name     String
+  address        String?
+  phone          String?
+  email          String             @unique
+  logo           String?
+  googleAPI      String?
   // publicId          String?
-  ipAddress         String
-  contractTime      DateTime
-  authProvider      authProviderProps?
-  password          String
-  isActive          Boolean
-  QRCodes           QRCodes?
-  minOrderValue     Int?
-  maxDiscount       Int?
-  couponValidity    Int?
-  AgentClients      AgentClients[]
-  ClientPlan        ClientPlans[]
-  ClientPayments    ClientPayments[]
-  ClientCoupon      CouponClients[]
-  SubscriptionPlans SubscriptionPlans[]
+  ipAddress      String
+  contractTime   DateTime
+  authProvider   authProviderProps?
+  password       String
+  isActive       Boolean
+  QRCodes        QRCodes?
+  minOrderValue  Int?
+  maxDiscount    Int?
+  couponValidity Int?
+  staffId        String?
+  staffPassword  String?
+  staffStatus    Boolean?
+  AgentClients   AgentClients[]
+  ClientPlan     ClientPlans[]
+  ClientPayments ClientPayments[]
+  ClientCoupon   CouponClients[]
+  // SubscriptionPlans SubscriptionPlans[]
 }
 
 model Coupons {
@@ -213,19 +216,19 @@ model ClientPayments {
   invoice_id     String?
   transaction_id String?
 
-  createdAt         DateTime            @default(now())
-  updatedAt         DateTime            @updatedAt
-  SubscriptionPlans SubscriptionPlans[]
-}
-
-model SubscriptionPlans {
-  id                 String         @id @default(uuid())
-  client_id          String
-  client_payments_id String
-  client_payment     ClientPayments @relation(fields: [client_payments_id], references: [id])
-  client             Clients        @relation(fields: [client_id], references: [id])
-  expirationDate     DateTime
-
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  // SubscriptionPlans SubscriptionPlans[]
 }
+
+// model SubscriptionPlans {
+//   id                 String         @id @default(uuid())
+//   client_id          String
+//   client_payments_id String
+//   client_payment     ClientPayments @relation(fields: [client_payments_id], references: [id])
+//   client             Clients        @relation(fields: [client_id], references: [id])
+//   expirationDate     DateTime
+
+//   createdAt DateTime @default(now())
+//   updatedAt DateTime @updatedAt
+// }

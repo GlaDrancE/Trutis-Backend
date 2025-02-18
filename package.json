@@ -46,6 +46,7 @@
     "razorpay": "^2.9.5",
     "redis": "^4.7.0",
     "run": "^1.5.0",
+    "stripe": "^17.6.0",
     "supertokens-node": "^21.1.0",
     "ts-node": "^10.9.2",
     "zod": "^3.24.1"
