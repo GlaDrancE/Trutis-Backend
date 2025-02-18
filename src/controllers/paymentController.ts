@@ -14,9 +14,9 @@ export const createProducts = async (req: Request, res: Response): Promise<Respo
         // Each product contains a `default_price` field with the Price ID.
         res.json({
             products: [
-                { product: product1, priceId: product1.default_price },
-                { product: product2, priceId: product2.default_price },
-                { product: product3, priceId: product3.default_price },
+                { product: product1, priceId: product1.default_price, price: 1000 },
+                { product: product2, priceId: product2.default_price, price: 2000 },
+                { product: product3, priceId: product3.default_price, price: 3000 },
             ],
         });
     } catch (error) {
