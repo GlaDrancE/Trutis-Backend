@@ -43,7 +43,7 @@ steps:
 
 substitutions:
   _SERVICE_NAME: nodejs-app  # Default service name
-  _REGION: us-central1      # Default region
+  _REGION: europe-central2      # Default region
 
 images:
   - 'gcr.io/$PROJECT_ID/${_SERVICE_NAME}:$COMMIT_SHA'
