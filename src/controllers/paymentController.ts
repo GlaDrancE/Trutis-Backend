@@ -63,6 +63,25 @@ export const createPaymentSession = async (req: Request, res: Response): Promise
     }
 };
 
+export const createPortalSession = async (req: Request, res: Response): Promise<Response | void> => {
+    try {
+        const { sessionId } = req.body;
+        const checkoutSession = await stripe.checkout.sessions.retrieve(sessionId);
+        const returnUrl = `${process.env.FRONTEND_URL}/dashboard`;
+        const portalSession = await stripe.billingPortal.sessions.create({
+            customer: checkoutSession.customer as string,
+            return_url: returnUrl,
+        });
+        console.log("portalSession", portalSession)
+        res.redirect(303, portalSession.url);
+    } catch (error) {
+        console.error('Error creating portal session:', error);
+        res.status(500).send("Something went wrong");
+    }
+};
+
+
+
 export const webhook = async (req: Request, res: Response) => {
     const sig = req.headers["stripe-signature"] as string;
     let event: Stripe.Event;
