@@ -12,7 +12,7 @@ authRoutes.post("/agent/login", AgentLogin as RequestHandler);
 authRoutes.post("/agent/signup", CreateAgent as RequestHandler);
 
 
-authRoutes.post('/client/login', ClientLogin as RequestHandler)
+authRoutes.post('/client/login', ClientLogin as unknown as RequestHandler)
 authRoutes.post('/clients/register', upload.single('logo'), CreateInitClient as RequestHandler)
 authRoutes.post('/clients/google/register', CreateGoogleClient as RequestHandler)
 

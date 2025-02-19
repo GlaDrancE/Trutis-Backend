@@ -1,5 +1,5 @@
 import { RequestHandler, Router } from 'express'
-import { ClientLogin, CreateClient, DeleteClient, GetClient, GetClients, GetCoupons, SubPlans, UpdateClient, UpdateStaff } from '../controllers/clientController';
+import { ClientLogin, CreateClient, DeleteClient, GetClient, GetClients, GetCoupons, SubPlans, UpdateClient, UpdateStaff, sendResetPasswordEmail, resetPassword, getQrId } from '../controllers/clientController';
 import { upload } from '../utils/multer'
 import Caching from '../utils/caching';
 import { VerifyOtp, GenerateOtp } from '../controllers/otpController';
@@ -27,3 +27,8 @@ clientRoutes.post("/client/create-staff", UpdateStaff as RequestHandler)
 // OTP Routes
 clientRoutes.post("/client/generate-otp", GenerateOtp as RequestHandler)
 clientRoutes.post("/client/verify-otp", VerifyOtp as RequestHandler)
+
+
+clientRoutes.post('/client/sendresetpassword', sendResetPasswordEmail as unknown as RequestHandler)
+clientRoutes.post('/client/resetpassword', resetPassword  as RequestHandler)
+clientRoutes.post('/client/getqrid', getQrId  as RequestHandler)
