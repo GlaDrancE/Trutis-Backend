@@ -482,13 +482,14 @@ export const SubPlans = async (req: Request, res: Response): Promise<Response | 
 
 export const ClientForms = async (req: Request, res: Response) => {
     try {
-        const { id } = req.params;
-        if (!id) {
+        const { public_key } = req.params;
+        if (!public_key) {
             return res.status(400).send("Invalid Request")
         }
+
         const client = await prisma.clients.findFirst({
             where: {
-                qr_id: id
+                public_key: public_key
             }
         })
         if (!client) {
@@ -498,6 +499,31 @@ export const ClientForms = async (req: Request, res: Response) => {
     } catch (error) {
 
         res.status(500).send("Internal server error")
+    }
+}
+export const CreateClientPublicKey = async (req: Request, res: Response) => {
+    try {
+        const { clientId } = req.body;
+        if (!clientId) {
+            return res.status(400).send("Invalid Request")
+        }
+        const client = await prisma.clients.findFirst({
+            where: {
+                id: clientId
+            }
+        })
+        if (!client) {
+            return res.status(404).send("Client not found")
+        }
+        const publicKey = generateRandom(8);
+        await prisma.clients.update({
+            where: { id: clientId },
+            data: { public_key: publicKey }
+        })
+        res.status(200).json({ msg: "Public Key Created", public_key: publicKey })
+    } catch (error) {
+        console.log(error)
+        res.status(500).send("Internal Server Error")
     }
 }
 
