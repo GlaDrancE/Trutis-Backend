@@ -35,9 +35,6 @@ export const createProducts = async (req: Request, res: Response): Promise<Respo
 export const createPaymentSession = async (req: Request, res: Response): Promise<Response | void> => {
     try {
         const { lookup_key, clientId } = req.body;
-        console.log("clientId", clientId);
-
-        console.log("lookup_key  ", lookup_key)
         const session = await stripe.checkout.sessions.create({
             payment_method_types: ["card"],
             mode: 'subscription',
@@ -65,15 +62,28 @@ export const createPaymentSession = async (req: Request, res: Response): Promise
 
 export const createPortalSession = async (req: Request, res: Response): Promise<Response | void> => {
     try {
-        const { sessionId } = req.body;
-        const checkoutSession = await stripe.checkout.sessions.retrieve(sessionId);
+        const { customerId } = req.body;
         const returnUrl = `${process.env.FRONTEND_URL}/dashboard`;
+        // const checkoutSession = await stripe.checkout.sessions.create({
+        //     customer: customerId,
+        //     return_url: returnUrl,
+        //     ui_mode: "embedded",
+        //     subscription_data: {
+        //         trial_period_days: 7,
+        //     }
+        // })
+        console.log("customerId", customerId)
+
         const portalSession = await stripe.billingPortal.sessions.create({
-            customer: checkoutSession.customer as string,
+            customer: customerId,
             return_url: returnUrl,
         });
         console.log("portalSession", portalSession)
-        res.redirect(303, portalSession.url);
+        if (portalSession.url) {
+            res.status(200).json({ url: portalSession.url as string });
+        } else {
+            res.status(500).send("Something went wrong");
+        }
     } catch (error) {
         console.error('Error creating portal session:', error);
         res.status(500).send("Something went wrong");
@@ -84,6 +94,7 @@ export const createPortalSession = async (req: Request, res: Response): Promise<
 
 export const webhook = async (req: Request, res: Response) => {
     const sig = req.headers["stripe-signature"] as string;
+    console.log("sig: ", sig)
     let event: Stripe.Event;
 
     try {
@@ -122,9 +133,10 @@ export const verifyPayment = async (req: Request, res: Response) => {
 
         const session = await stripe.checkout.sessions.retrieve(session_id);
 
+        console.log("session", session)
         if (session.payment_status === "paid") {
             await savePaymentToDatabase(session);
-            return res.json({ success: true });
+            return res.json({ success: true, sessionId: session_id, customerId: session.customer as string });
         } else {
             return res.json({ success: false, message: "Payment not completed." });
         }
@@ -143,6 +155,7 @@ async function savePaymentToDatabase(session: Stripe.Checkout.Session): Promise<
 
         console.log(session)
         const clientId = session.metadata.client_id;
+        const customerId = session.customer as string;
         const amount = session.amount_total ? session.amount_total / 100 : 0;
         const paymentType = session.payment_method_types?.[0] || "unknown";
         const status = session.payment_status === "paid" ? "completed" : "failed";
@@ -156,6 +169,7 @@ async function savePaymentToDatabase(session: Stripe.Checkout.Session): Promise<
                 status: status,
                 invoice_id: session.invoice as string | null,
                 transaction_id: session.id,
+                stripe_customer_id: customerId,
             },
         });
 

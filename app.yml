@@ -1,4 +1,0 @@
-runtime: nodejs18
-env_variables:
-  NODE_ENV: "production"
-vm: true
