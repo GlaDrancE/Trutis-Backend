@@ -130,7 +130,6 @@ export const verifyPayment = async (req: Request, res: Response) => {
     const { session_id } = req.body;
 
     try {
-
         const session = await stripe.checkout.sessions.retrieve(session_id);
 
         console.log("session", session)

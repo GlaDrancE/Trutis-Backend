@@ -110,6 +110,9 @@ model Clients {
   ClientPayments ClientPayments[]
   ClientCoupon   CouponClients[]
   // SubscriptionPlans SubscriptionPlans[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model Coupons {
