@@ -44,6 +44,7 @@ model Agent {
   profile            String
   type_of_employment String
   createdAt          DateTime       @default(now())
+  isActive  Boolean  @default(true)
   updatedAt          DateTime       @updatedAt
   AgentClients       AgentClients[]
   // AgentSales         Sales[]
