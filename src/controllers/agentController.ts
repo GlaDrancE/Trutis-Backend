@@ -44,7 +44,7 @@ export const AgentLogin = async (req: Request, res: Response) => {
       { expiresIn: '1h' }
     );
 
-    res.json({ token });
+    res.json({ token , agentId: agent.id});
   } catch (error) {
     console.error('Login error:', error);
     res.status(500).json({ error: 'Internal server error.' });
@@ -185,7 +185,7 @@ export const VerifyClient = async (req: Request, res: Response) => {
     }
     const clients = await prisma.clients.findFirst({
       where: {
-        qr_id: id
+        id: id
       }
     })
     if (!clients) {
@@ -198,22 +198,118 @@ export const VerifyClient = async (req: Request, res: Response) => {
   }
 }
 
-export const VerifyQRID = async (req: Request, res: Response) => {
+export const linkQRCode = async (req: Request, res: Response) => {
   try {
-    const { id } = req.body
-    if (!id) {
-      return res.status(400).send("ID is not provided")
+    const { clientId, QRId, agentId } = req.body;
+
+    if (!clientId || !QRId) {
+      return res.status(400).json({ error: "Client ID and QR ID are required." });
     }
-    const qrCode = await prisma.qRCodes.findFirst({
-      where: {
-        public_key: id
-      }
-    })
+
+    const qrCode = await prisma.qRCodes.findUnique({
+      where: { private_key: QRId }
+    });
+
     if (!qrCode) {
-      return res.status(400).send("QR Code not found")
+      return res.status(404).json({ error: "Invalid QR Code." });
     }
-    res.status(200).json({ private_key: qrCode.private_key })
+
+    const updatedClient = await prisma.clients.update({
+      where: { id: clientId },
+      data: { qr_id: QRId }
+    });
+
+    const updatedQRCode = await prisma.qRCodes.update({
+      where: { private_key: QRId },
+      data: { client_id: clientId }
+    });
+
+    const newAgentClient = await prisma.agentClients.create({
+      data: {
+        agent_id: agentId,
+        client_id: clientId,
+      },
+    });
+
+    res.status(200).json({
+      message: "QR Code linked successfully.",
+      client: updatedClient,
+      qrCode: updatedQRCode,
+      agentClient: newAgentClient
+    });
+
   } catch (error) {
-    res.status(500).send("Internal Server Error")
+    console.error("Error linking QR Code:", error);
+    res.status(500).json({ error: "Internal server error" });
   }
-}
+};
+
+
+export const getAgentClients = async (req: Request, res: Response) => {
+  try {
+    const { agentId } = req.params;
+
+    if (!agentId) {
+      return res.status(400).json({ error: "Agent ID is required" });
+    }
+
+
+    const agentClients = await prisma.agentClients.findMany({
+      where: { agent_id: agentId },
+      include: { client: true },
+    });
+
+    res.status(200).json(agentClients);
+  } catch (error) {
+    console.error("Error fetching agent clients:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+
+export const getAgentProfile = async (req: Request, res: Response) => {
+  try {
+    const { agentId } = req.params;
+
+    const agent = await prisma.agent.findUnique({
+      where: { id: agentId },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        createdAt: true,
+        AgentClients: true,
+        isActive: true
+      },
+    });
+
+    if (!agent) {
+      return res.status(404).json({ message: "Agent not found" });
+    }
+
+
+    const totalVerifications = agent.AgentClients.length;
+
+    res.status(200).json({ ...agent, totalVerifications });
+  } catch (error) {
+    console.error("Error fetching agent:", error);
+    res.status(500).json({ message: "Internal Server Error" });
+  }
+};
+
+export const updateAgentStatus = async (req: Request, res: Response) => {
+  const { agentId } = req.params;
+  const { newStatus : isActive } = req.body;
+
+  try {
+    const updatedAgent = await prisma.agent.update({
+      where: { id: agentId },
+      data: { isActive }
+    });
+
+    res.status(200).json({ updatedAgent });
+  } catch (error) {
+    console.error("Error updating status:", error);
+    res.status(500).json({ success: false, message: "Failed to update status" });
+  }
+};
