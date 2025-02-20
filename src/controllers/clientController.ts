@@ -83,7 +83,7 @@ export const ClientLogin = async (req: Request, res: Response) => {
                 email: email,
             },
         });
-        console.log(client);
+        // console.log(client);
         
         if (client) {
             const isPasswordValid = await bcrypt.compare(password, client.password);
@@ -94,8 +94,8 @@ export const ClientLogin = async (req: Request, res: Response) => {
             if (!JWT_SECRET) {
                 return res.status(400).send("Failed to load token");
             }
-            const token = jwt.sign({ userId: client.id }, JWT_SECRET, { expiresIn: '1d' });
-            return res.status(200).json({ userId: client.id, token: token, userType: 'client' });
+            const token = jwt.sign({ userId: client.id, userType: "client" }, JWT_SECRET, { expiresIn: '1d' });
+            return res.status(200).json({ userId: client.id, token: token });
         }
 
         const clientByStaffId = await prisma.clients.findFirst({
@@ -105,7 +105,7 @@ export const ClientLogin = async (req: Request, res: Response) => {
             },
         });
 
-        console.log(clientByStaffId);
+        // console.log(clientByStaffId);
 
 
         if (clientByStaffId) {
@@ -117,8 +117,9 @@ export const ClientLogin = async (req: Request, res: Response) => {
             if (!JWT_SECRET) {
                 return res.status(400).send("Failed to load token");
             }
-            const token = jwt.sign({ userId: clientByStaffId.id }, JWT_SECRET, { expiresIn: '1d' });
-            return res.status(200).json({ userId: clientByStaffId.id, token: token, userType: "staff" });
+
+            const token = jwt.sign({ userId: clientByStaffId.id, userType: "staff" }, JWT_SECRET, { expiresIn: '1d' });
+            return res.status(200).json({ userId: clientByStaffId.id, token: token });
         }
 
         return res.status(401).send("Invalid credentials");
