@@ -38,4 +38,3 @@ export const verifyOTP = (email: string, userOTP: string) => {
     otpStore.delete(email);
     return { valid: true, message: 'OTP verified successfully' };
 };
-
