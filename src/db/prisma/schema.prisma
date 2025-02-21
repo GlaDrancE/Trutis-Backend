@@ -93,7 +93,7 @@ model Clients {
   email          String             @unique
   logo           String?
   googleAPI      String?
-  // publicId          String?
+  public_key     String?            @unique
   ipAddress      String
   contractTime   DateTime
   authProvider   authProviderProps?
@@ -111,6 +111,9 @@ model Clients {
   ClientPayments ClientPayments[]
   ClientCoupon   CouponClients[]
   // SubscriptionPlans SubscriptionPlans[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model Coupons {
@@ -207,15 +210,16 @@ model Plans {
 }
 
 model ClientPayments {
-  id             String   @id @default(uuid())
-  client_id      String
-  client         Clients  @relation(fields: [client_id], references: [id])
-  amount         Decimal
-  payment_date   DateTime @default(now())
-  payment_type   String // e.g., "credit_card", "bank_transfer"
-  status         String   @default("pending") // "completed", "pending", "failed"
-  invoice_id     String?
-  transaction_id String?
+  id                 String   @id @default(uuid())
+  client_id          String
+  client             Clients  @relation(fields: [client_id], references: [id])
+  amount             Decimal
+  payment_date       DateTime @default(now())
+  payment_type       String // e.g., "credit_card", "bank_transfer"
+  status             String   @default("pending") // "completed", "pending", "failed"
+  invoice_id         String?
+  transaction_id     String?
+  stripe_customer_id String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
