@@ -68,10 +68,11 @@ export const GetClient = async (req: Request, res: Response) => {
 
     }
 }
+
+
 export const ClientLogin = async (req: Request, res: Response) => {
     try {
         const { email, password } = req.body;
-
 
         if (!email) {
             return res.status(400).json({ error: 'Email is required' });
@@ -79,46 +80,55 @@ export const ClientLogin = async (req: Request, res: Response) => {
 
         const client = await prisma.clients.findFirst({
             where: {
-                email: email
+                email: email,
+            },
+        });
+        // console.log(client);
+
+        if (client) {
+            const isPasswordValid = await bcrypt.compare(password, client.password);
+            if (!isPasswordValid) {
+                return res.status(401).send("Password does not match");
             }
-        })
-        if (!client) {
-            return res.status(400).send("Invalid email")
+
+            if (!JWT_SECRET) {
+                return res.status(400).send("Failed to load token");
+            }
+            const token = jwt.sign({ userId: client.id, userType: "client" }, JWT_SECRET, { expiresIn: '1d' });
+            return res.status(200).json({ userId: client.id, token: token });
         }
-        const isPasswordValid = await bcrypt.compare(password, client.password)
-        if (!isPasswordValid) {
-            return res.status(401).send("Password does not matched")
+
+        const clientByStaffId = await prisma.clients.findFirst({
+            where: {
+                staffId: email,
+                staffStatus: true,
+            },
+        });
+
+        // console.log(clientByStaffId);
+
+
+        if (clientByStaffId) {
+
+            if (!(password == clientByStaffId.staffPassword)) {
+                return res.status(401).send("Password does not match");
+            }
+
+            if (!JWT_SECRET) {
+                return res.status(400).send("Failed to load token");
+            }
+
+            const token = jwt.sign({ userId: clientByStaffId.id, userType: "staff" }, JWT_SECRET, { expiresIn: '1d' });
+            return res.status(200).json({ userId: clientByStaffId.id, token: token });
         }
 
-
-        // Generate OTP
-        const otp = generateOTP();
-
-        // Store OTP with expiry
-        // storeOTP(email, otp);
-
-        // Send OTP via email
-        // const emailSent = await sendEmail(
-        //     email,
-        //     'Login OTP',
-        //     `Your OTP for login is: ${otp}. This OTP will expire in 15 minutes.`
-        // );
-
-        // if (!emailSent) {
-        //     return res.status(500).json({ error: 'Failed to send OTP email' });
-        // }
-        if (!JWT_SECRET) {
-            return res.status(400).send("Failed to load token")
-        }
-        const token = jwt.sign({ userId: client.id }, JWT_SECRET, { expiresIn: '1d' })
-
-        res.status(200).json({ userId: client.id, token: token })
+        return res.status(401).send("Invalid credentials");
 
     } catch (error) {
         console.error('Login error:', error);
-        res.status(500).json({ error: 'Internal server error' });
+        return res.status(500).json({ error: 'Internal server error' });
     }
-}
+};
 
 export const CreateInitClient = async (req: Request, res: Response): Promise<Response | void> => {
     try {
@@ -516,10 +526,12 @@ export const CreateClientPublicKey = async (req: Request, res: Response) => {
             return res.status(404).send("Client not found")
         }
         const publicKey = generateRandom(8);
+
         await prisma.clients.update({
             where: { id: clientId },
             data: { public_key: publicKey }
         })
+        console.log("Public Key Created", publicKey)
         res.status(200).json({ msg: "Public Key Created", public_key: publicKey })
     } catch (error) {
         console.log(error)
@@ -574,4 +586,111 @@ export const GetCoupons = async (req: Request, res: Response) => {
         res.status(500).json({ error: 'Failed to fetch coupons' });
     }
 }
+
+export const sendResetPasswordEmail = async (req: Request, res: Response) => {
+    const { email } = req.body;
+
+    try {
+        const client = await prisma.clients.findUnique({
+            where: { email },
+        });
+
+        if (!client) {
+            return res.status(404).json({ message: 'Client not found' });
+        }
+
+        const resetToken = jwt.sign({ email: client.email }, process.env.JWT_SECRET as string, {
+            expiresIn: '1h'
+        });
+
+        const frontendUrl = process.env.FRONTEND_URL as string;
+
+        const resetUrl = `${frontendUrl}/reset-password/${resetToken}`;
+
+        const emailSent = await sendEmail(
+            client.email,
+            'Password Reset Request',
+            `You requested a password reset. Click the link to reset your password: ${resetUrl}\n\nThis link will expire in 1 hour.`
+        );
+
+        if (!emailSent) {
+            return res.status(500).json({ error: 'Failed to send Email' });
+        }
+
+        return res.status(200).json({ message: 'Reset link sent to your email' });
+
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({ message: 'Something went wrong' });
+    }
+};
+
+
+
+export const resetPassword = async (req: Request, res: Response) => {
+    try {
+        const { token, password } = req.body;
+
+        if (!token || !password) {
+            return res.status(400).json({ message: "Token and new password are required" });
+        }
+
+        let decoded;
+        try {
+            if (!JWT_SECRET) {
+                return res.status(400).json({ message: "JWT_SECRET is not defined" });
+            }
+            decoded = jwt.verify(token, JWT_SECRET) as unknown as { email: string };
+        } catch (err) {
+            return res.status(400).json({ message: "Please Retry Again" });
+        }
+
+        const client = await prisma.clients.findUnique({
+            where: { email: decoded.email }
+        });
+
+        if (!client) {
+            return res.status(404).json({ message: "User not found" });
+        }
+
+        const hashedPassword = await bcrypt.hash(password, 10);
+
+        await prisma.clients.update({
+            where: { email: decoded.email },
+            data: { password: hashedPassword }
+        });
+
+        res.status(200).json({ message: "Password reset successfully" });
+    } catch (error) {
+        console.error("Reset Password Error:", error);
+        res.status(500).json({ message: "Something went wrong" });
+    }
+};
+
+export const getQrId = async (req: Request, res: Response) => {
+    try {
+        const { token } = req.body;
+
+        if (!token) {
+            return res.status(400).json({ message: "Unauthorized. Please log in again!" });
+        }
+        const decoded = jwt.verify(token, process.env.JWT_SECRET!) as { userId: string };
+
+        const client = await prisma.clients.findUnique({
+            where: { id: decoded.userId },
+            select: { qr_id: true }
+        });
+
+        if (!client) {
+            return res.status(404).json({ message: "User not found" });
+        }
+
+        return res.status(200).json({ qr_id: client.qr_id });
+
+
+    } catch (error) {
+        console.error("getQrId Error:", error);
+        res.status(500).json({ message: "Something went wrong" });
+    }
+};
 

@@ -317,3 +317,33 @@ const updateSubscription = async (
     }
 
 }
+
+
+
+export const VerifyClientPayment = async (req: Request, res: Response) => {
+    try {
+        const { clientId } = req.body;
+        if (!clientId) {
+            return res.status(400).json({ message: "Invalid Request" });
+        }
+        const client = await prisma.clients.findUnique({
+            where: { id: clientId }
+        })
+        if (!client) {
+            return res.status(404).json({ message: "Client not found" });
+        }
+        const payment = await prisma.clientPayments.findFirst({
+            where: { client_id: clientId }
+        })
+        if (!payment) {
+            return res.status(404).json({ message: "Payment not found" });
+        }
+        if (payment.status === "success") {
+            return res.status(200).json({ message: "Payment already verified" });
+        }
+        res.status(200).json({ message: "Payment verified" });
+    } catch (error) {
+        console.error("verifyPayment Error:", error);
+        res.status(500).json({ message: "Something went wrong" });
+    }
+}
