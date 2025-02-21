@@ -175,6 +175,7 @@ export const webhook = async (req: Request, res: Response) => {
         default:
             console.log(`Unhandled event type: ${event.type}`);
     }
+    res.status(200).send("Webhook received");
 }
 
 
