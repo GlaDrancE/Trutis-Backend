@@ -91,40 +91,85 @@ export const createPortalSession = async (req: Request, res: Response): Promise<
 };
 
 
-
 export const webhook = async (req: Request, res: Response) => {
-    const sig = req.headers["stripe-signature"] as string;
-    console.log("sig: ", sig)
+    const sig = req.headers['stripe-signature'] as string;
     let event: Stripe.Event;
 
     try {
         event = stripe.webhooks.constructEvent(req.body, sig, process.env.STRIPE_WEBHOOK_SECRET as string);
     } catch (err: any) {
-        console.error("Webhook error:", err.message);
+        console.error('Webhook signature verification failed:', err.message);
         return res.status(400).send(`Webhook Error: ${err.message}`);
     }
 
+    // Handle the events
     switch (event.type) {
-        case "checkout.session.completed":
-            const session = event.data.object as Stripe.Checkout.Session;
-            console.log("Payment successful:", session);
-
+        case 'account.external_account.created':
+            console.log('External account created:', event.data.object);
+            // TODO: Process external account creation
             break;
-
-        case "invoice.payment_succeeded":
-            console.log("Invoice paid:", event.data.object);
+        case 'account.external_account.deleted':
+            console.log('External account deleted:', event.data.object);
+            // TODO: Process external account deletion
             break;
-
-        case "customer.subscription.deleted":
-            console.log("Subscription canceled:", event.data.object);
+        case 'account.external_account.updated':
+            console.log('External account updated:', event.data.object);
+            // TODO: Process external account update
             break;
-
+        case 'account.updated':
+            console.log('Account updated:', event.data.object);
+            // TODO: Process account update
+            break;
+        case 'checkout.session.async_payment_failed':
+            console.log('Checkout session async payment failed:', event.data.object);
+            // TODO: Handle async payment failure in Checkout Session
+            break;
+        case 'checkout.session.async_payment_succeeded':
+            console.log('Checkout session async payment succeeded:', event.data.object);
+            // TODO: Handle async payment success in Checkout Session
+            break;
+        case 'checkout.session.completed':
+            console.log('Checkout session completed:', event.data.object);
+            // TODO: Process completed Checkout Session
+            break;
+        case 'checkout.session.expired':
+            console.log('Checkout session expired:', event.data.object);
+            // TODO: Handle expired Checkout Session
+            break;
+        case 'subscription_schedule.aborted':
+            console.log('Subscription schedule aborted:', event.data.object);
+            // TODO: Process subscription schedule abortion
+            break;
+        case 'subscription_schedule.canceled':
+            console.log('Subscription schedule canceled:', event.data.object);
+            // TODO: Process subscription schedule cancellation
+            break;
+        case 'subscription_schedule.completed':
+            console.log('Subscription schedule completed:', event.data.object);
+            // TODO: Process completed subscription schedule
+            break;
+        case 'subscription_schedule.created':
+            console.log('Subscription schedule created:', event.data.object);
+            // TODO: Process created subscription schedule
+            break;
+        case 'subscription_schedule.expiring':
+            console.log('Subscription schedule expiring:', event.data.object);
+            // TODO: Process expiring subscription schedule
+            break;
+        case 'subscription_schedule.released':
+            console.log('Subscription schedule released:', event.data.object);
+            // TODO: Process released subscription schedule
+            break;
+        case 'subscription_schedule.updated':
+            console.log('Subscription schedule updated:', event.data.object);
+            // TODO: Process updated subscription schedule
+            break;
         default:
             console.log(`Unhandled event type: ${event.type}`);
     }
+}
 
-    res.status(200).json({ received: true });
-};
+
 
 export const verifyPayment = async (req: Request, res: Response) => {
     const { session_id } = req.body;
