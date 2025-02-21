@@ -84,7 +84,7 @@ export const ClientLogin = async (req: Request, res: Response) => {
             },
         });
         // console.log(client);
-        
+
         if (client) {
             const isPasswordValid = await bcrypt.compare(password, client.password);
             if (!isPasswordValid) {
@@ -109,7 +109,7 @@ export const ClientLogin = async (req: Request, res: Response) => {
 
 
         if (clientByStaffId) {
-            
+
             if (!(password == clientByStaffId.staffPassword)) {
                 return res.status(401).send("Password does not match");
             }
@@ -526,6 +526,7 @@ export const CreateClientPublicKey = async (req: Request, res: Response) => {
             return res.status(404).send("Client not found")
         }
         const publicKey = generateRandom(8);
+
         await prisma.clients.update({
             where: { id: clientId },
             data: { public_key: publicKey }
