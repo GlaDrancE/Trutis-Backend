@@ -531,6 +531,7 @@ export const CreateClientPublicKey = async (req: Request, res: Response) => {
             where: { id: clientId },
             data: { public_key: publicKey }
         })
+        console.log("Public Key Created", publicKey)
         res.status(200).json({ msg: "Public Key Created", public_key: publicKey })
     } catch (error) {
         console.log(error)
@@ -692,3 +693,4 @@ export const getQrId = async (req: Request, res: Response) => {
         res.status(500).json({ message: "Something went wrong" });
     }
 };
+
