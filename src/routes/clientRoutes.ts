@@ -1,5 +1,5 @@
 import { RequestHandler, Router } from 'express'
-import { ClientLogin, CreateClient, DeleteClient, CreateClientPublicKey, GetClient, GetClients, GetCoupons, SubPlans, UpdateClient, UpdateStaff, sendResetPasswordEmail, resetPassword, getQrId } from '../controllers/clientController';
+import { ClientLogin, CreateClient, DeleteClient, CreateClientPublicKey, GetClient, GetClients, GetCoupons, SubPlans, UpdateClient, UpdateStaff, sendResetPasswordEmail, resetPassword, getQrId, fetchCustomerFromCoupon } from '../controllers/clientController';
 import { upload } from '../utils/multer'
 import Caching from '../utils/caching';
 import { VerifyOtp, GenerateOtp } from '../controllers/otpController';
@@ -19,8 +19,8 @@ export default clientRoutes;
 clientRoutes.post('/client/create-public-key', CreateClientPublicKey as RequestHandler)
 
 // Coupons routes
-
 clientRoutes.get("/clients/coupons/:id", GetCoupons as RequestHandler)
+clientRoutes.post("/coupon/verify", fetchCustomerFromCoupon as RequestHandler)
 
 // Staff routes
 clientRoutes.post("/client/create-staff", UpdateStaff as RequestHandler)
@@ -30,6 +30,6 @@ clientRoutes.post("/client/generate-otp", GenerateOtp as RequestHandler)
 clientRoutes.post("/client/verify-otp", VerifyOtp as RequestHandler)
 
 
-clientRoutes.post('/client/sendresetpassword', sendResetPasswordEmail as unknown as RequestHandler)
+clientRoutes.post('/client/sendresetpassword', sendResetPasswordEmail as RequestHandler)
 clientRoutes.post('/client/resetpassword', resetPassword  as RequestHandler)
 clientRoutes.post('/client/getqrid', getQrId  as RequestHandler)
