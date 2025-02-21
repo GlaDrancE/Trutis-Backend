@@ -91,11 +91,16 @@ export const createPortalSession = async (req: Request, res: Response): Promise<
 
 export const webhook = async (req: Request, res: Response) => {
     const sig = req.headers['stripe-signature'] as string;
+    const body = req.body;
     let event: Stripe.Event;
 
     console.log("Webhook received");
     try {
-        event = stripe.webhooks.constructEvent(req.body, sig, process.env.STRIPE_WEBHOOK_SECRET as string);
+        event = stripe.webhooks.constructEvent(
+            body,
+            sig,
+            process.env.STRIPE_WEBHOOK_SECRET as string);
+        console.log("event: ", event)
     } catch (err: any) {
         console.error('Webhook signature verification failed:', err.message);
         return res.status(400).send(`Webhook Error: ${err.message}`);
@@ -103,6 +108,10 @@ export const webhook = async (req: Request, res: Response) => {
 
     // Handle the events
     switch (event.type) {
+        case 'customer.created':
+            console.log('Customer created:', event.data.object);
+            // TODO: Process customer creation
+            break;
         case 'account.external_account.created':
             console.log('External account created:', event.data.object);
             // TODO: Process external account creation

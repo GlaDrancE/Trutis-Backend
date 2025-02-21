@@ -1,6 +1,6 @@
 import express, { RequestHandler } from "express";
 import cors from "cors";
-import { json } from "body-parser";
+import bodyParser, { json } from "body-parser";
 import "./jobs/cronJob"
 
 import authRoutes from "./routes/authRoutes";
@@ -9,9 +9,12 @@ import clientRoutes from "./routes/clientRoutes";
 import adminRoutes from "./routes/adminRoutes";
 import formRoutes from "./routes/formRoutes";
 import paymentRoutes from "./routes/paymentRoutes";
+import { webhook } from "./controllers/paymentController";
 
 const app = express();
 const PORT = process.env.PORT || 5000;
+
+app.post("/api/webhook", bodyParser.raw({ type: 'application/json' }), webhook as RequestHandler)
 
 app.use(json());
 app.use(express.json({ limit: '50mb' })); // Increase the limit
