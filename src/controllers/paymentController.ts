@@ -72,13 +72,11 @@ export const createPortalSession = async (req: Request, res: Response): Promise<
         //         trial_period_days: 7,
         //     }
         // })
-        console.log("customerId", customerId)
 
         const portalSession = await stripe.billingPortal.sessions.create({
             customer: customerId,
             return_url: returnUrl,
         });
-        console.log("portalSession", portalSession)
         if (portalSession.url) {
             res.status(200).json({ url: portalSession.url as string });
         } else {
@@ -177,7 +175,6 @@ export const verifyPayment = async (req: Request, res: Response) => {
     try {
         const session = await stripe.checkout.sessions.retrieve(session_id);
 
-        console.log("session", session)
         if (session.payment_status === "paid") {
             await savePaymentToDatabase(session);
             return res.json({ success: true, sessionId: session_id, customerId: session.customer as string });
@@ -197,7 +194,6 @@ async function savePaymentToDatabase(session: Stripe.Checkout.Session): Promise<
             return;
         }
 
-        console.log(session)
         const clientId = session.metadata.client_id;
         const customerId = session.customer as string;
         const amount = session.amount_total ? session.amount_total / 100 : 0;
