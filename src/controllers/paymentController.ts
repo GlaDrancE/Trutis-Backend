@@ -35,6 +35,17 @@ export const createProducts = async (req: Request, res: Response): Promise<Respo
 export const createPaymentSession = async (req: Request, res: Response): Promise<Response | void> => {
     try {
         const { lookup_key, clientId } = req.body;
+        const client = await prisma.clients.findUnique({
+            where: {
+                id: clientId
+            }
+        })
+        if (!client) {
+            return res.status(404).send("Client not found");
+        }
+        if (client.isActive) {
+            return res.status(400).send("Client is already subscribed");
+        }
         const session = await stripe.checkout.sessions.create({
             payment_method_types: ["card"],
             mode: 'subscription',
@@ -112,22 +123,6 @@ export const webhook = async (req: Request, res: Response) => {
             console.log('Customer created:', event.data.object);
             // TODO: Process customer creation
             break;
-        case 'account.external_account.created':
-            console.log('External account created:', event.data.object);
-            // TODO: Process external account creation
-            break;
-        case 'account.external_account.deleted':
-            console.log('External account deleted:', event.data.object);
-            // TODO: Process external account deletion
-            break;
-        case 'account.external_account.updated':
-            console.log('External account updated:', event.data.object);
-            // TODO: Process external account update
-            break;
-        case 'account.updated':
-            console.log('Account updated:', event.data.object);
-            // TODO: Process account update
-            break;
         case 'checkout.session.async_payment_failed':
             console.log('Checkout session async payment failed:', event.data.object);
             // TODO: Handle async payment failure in Checkout Session
@@ -172,6 +167,47 @@ export const webhook = async (req: Request, res: Response) => {
             console.log('Subscription schedule updated:', event.data.object);
             // TODO: Process updated subscription schedule
             break;
+
+        case 'payment_intent.succeeded':
+            console.log('Payment intent succeeded:', event.data.object);
+            await savePaymentToDatabase(event.data);
+            break;
+        case 'customer.subscription.created':
+            console.log('Customer subscription created:', event.data.object);
+            await updateSubscription(
+                event.data.object.customer as string,
+                event.data.object.id,
+                event.data.object.current_period_end,
+                event.data.object.status,
+                event.data.object.collection_method,
+                event.data.object.currency
+            );
+            break;
+        case 'customer.subscription.pending_update_applied':
+            console.log('Customer subscription pending update applied:', event.data.object);
+            await updateSubscription(
+                event.data.object.customer as string,
+                event.data.object.id,
+                event.data.object.current_period_end,
+                event.data.object.status,
+                event.data.object.collection_method,
+                event.data.object.currency
+            );
+            break;
+        case 'customer.subscription.trial_will_end':
+            console.log("Customer subscription trial will end:", event.data.object);
+            // TODO: Send email to client
+            break;
+        case 'invoice.paid':
+            console.log('Invoice paid:', event.data.object);
+            await updateSubscription(
+                event.data.object.customer as string,
+                event.data.object.id,
+                event.data.object.period_end,
+                event.data.object.status as string,
+                event.data.object.collection_method as string,
+                event.data.object.currency as string);
+            break;
         default:
             console.log(`Unhandled event type: ${event.type}`);
     }
@@ -180,14 +216,35 @@ export const webhook = async (req: Request, res: Response) => {
 
 
 
+
+export const savePaymentToDatabase = async (data: Stripe.Event.Data) => {
+    const session = data as Stripe.Checkout.Session;
+    await prisma.clientPayments.create({
+        data: {
+            client_id: session.metadata?.client_id as string,
+            amount: session?.amount_total ? session?.amount_total / 100 : 0,
+            payment_date: new Date(),
+            payment_type: "stripe",
+            status: "completed",
+            invoice_id: session.invoice as string | null,
+            transaction_id: session.id,
+            stripe_customer_id: session.customer as string,
+
+        }
+    })
+}
+
+
 export const verifyPayment = async (req: Request, res: Response) => {
     const { session_id } = req.body;
 
     try {
         const session = await stripe.checkout.sessions.retrieve(session_id);
 
+
+
         if (session.payment_status === "paid") {
-            await savePaymentToDatabase(session);
+            // await savePaymentToDatabase(session);
             return res.json({ success: true, sessionId: session_id, customerId: session.customer as string });
         } else {
             return res.json({ success: false, message: "Payment not completed." });
@@ -198,34 +255,65 @@ export const verifyPayment = async (req: Request, res: Response) => {
     }
 }
 
-async function savePaymentToDatabase(session: Stripe.Checkout.Session): Promise<void> {
+// async function savePaymentToDatabase(session: Stripe.Checkout.Session): Promise<void> {
+//     try {
+//         if (!session.metadata || !session.metadata.client_id) {
+//             console.error("Client ID is missing in session metadata.");
+//             return;
+//         }
+
+//         const clientId = session.metadata.client_id;
+//         const customerId = session.customer as string;
+//         const amount = session.amount_total ? session.amount_total / 100 : 0;
+//         const paymentType = session.payment_method_types?.[0] || "unknown";
+//         const status = session.payment_status === "paid" ? "completed" : "failed";
+
+//         await prisma.clientPayments.create({
+//             data: {
+//                 client_id: clientId,
+//                 amount: amount,
+//                 payment_date: new Date(),
+//                 payment_type: paymentType,
+//                 status: status,
+//                 invoice_id: session.invoice as string | null,
+//                 transaction_id: session.id,
+//                 stripe_customer_id: customerId,
+//             },
+//         });
+
+//         console.log("Payment stored successfully:", session.id);
+//     } catch (error) {
+//         console.error("Error saving payment to database:", error);
+//     }
+// }
+
+
+const updateSubscription = async (
+    customerId: string,
+    subscriptionId: string,
+    expirationDate: number,
+    status: string,
+    collectionMethod: string,
+    currency: string
+) => {
     try {
-        if (!session.metadata || !session.metadata.client_id) {
-            console.error("Client ID is missing in session metadata.");
-            return;
-        }
-
-        const clientId = session.metadata.client_id;
-        const customerId = session.customer as string;
-        const amount = session.amount_total ? session.amount_total / 100 : 0;
-        const paymentType = session.payment_method_types?.[0] || "unknown";
-        const status = session.payment_status === "paid" ? "completed" : "failed";
-
-        await prisma.clientPayments.create({
-            data: {
-                client_id: clientId,
-                amount: amount,
-                payment_date: new Date(),
-                payment_type: paymentType,
-                status: status,
-                invoice_id: session.invoice as string | null,
-                transaction_id: session.id,
-                stripe_customer_id: customerId,
+        const clientPayment = await prisma.subscriptions.updateMany({
+            where: {
+                stripe_customer_id: customerId
             },
-        });
+            data: {
+                isActive: true,
+                current_period_end: new Date(expirationDate * 1000),
+                subscription_status: status,
+                subscription_id: subscriptionId,
+                collection_method: collectionMethod,
+                currency: currency
+            }
+        })
 
-        console.log("Payment stored successfully:", session.id);
+
     } catch (error) {
-        console.error("Error saving payment to database:", error);
+
     }
+
 }
