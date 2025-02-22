@@ -4,7 +4,7 @@ class StripeProducts {
     constructor(stripe: Stripe) {
         this.stripe = stripe;
     }
-    async createProduct(name: string, description: string, price: number, interval_count: number = 1) {
+    async createProduct(name: string, description: string, price: number, interval_count: number = 1, client_id: string) {
         const product = await this.stripe.products.create({
             name,
             description,
@@ -16,7 +16,7 @@ class StripeProducts {
                     interval: 'month',
                     interval_count: interval_count,
                 }
-            }
+            },
         })
         return product;
     }

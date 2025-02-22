@@ -1,9 +1,9 @@
 import { generateRandom } from "./generateRand";
 const publicKeyStore = new Map<string, { publicKey: string, expiryTime: Date }>();
-export const generatePublicKey = (clientId: string) => {
-    const expiryTime = new Date(Date.now() + 24 * 60 * 60 * 1000);
+export const generatePublicKey = () => {
+    // const expiryTime = new Date(Date.now() + 24 * 60 * 60 * 1000);
     const publicKey = generateRandom(8);
-    publicKeyStore.set(clientId, { publicKey, expiryTime });
+    // publicKeyStore.set(clientId, { publicKey, expiryTime });
     return publicKey;
 }
 

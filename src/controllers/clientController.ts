@@ -694,3 +694,55 @@ export const getQrId = async (req: Request, res: Response) => {
     }
 };
 
+export const fetchCustomerFromCoupon = async (req: Request, res: Response): Promise<Response | void> => {
+    const { code } = req.body.params;
+
+    if (!code || typeof code !== 'string') {
+        return res.status(400).json({ message: 'Coupon code is required' });
+    }
+
+    try {
+
+        const coupon = await prisma.coupons.findFirst({
+            where: {
+                code: code,
+                validFrom: { lte: new Date() },
+                validTill: { gte: new Date() },
+            },
+            include: {
+                CustomersCoupons: {
+                    include: {
+                        Customers: true,
+                    },
+                },
+            },
+        });
+
+        if (!coupon) {
+            return res.status(404).json({
+                success: false,
+                message: 'Coupon not found or expired'
+            });
+        }
+
+
+        const customerCoupon = coupon.CustomersCoupons[0];
+        const customer = customerCoupon?.Customers;
+
+        return res.status(200).json({
+            success: true,
+            customer: customer ? {
+                name: customer.name,
+                email: customer.email,
+                phone: customer.phone,
+                dob: customer.DOB.toISOString(),
+            } : null,
+        });
+    } catch (error) {
+        console.error('Error verifying coupon:', error);
+        return res.status(500).json({
+            success: false,
+            message: 'Internal server error'
+        });
+    }
+}
