@@ -110,6 +110,7 @@ model Clients {
   ClientPlan     ClientPlans[]
   ClientPayments ClientPayments[]
   ClientCoupon   CouponClients[]
+  Subscriptions  Subscriptions?
   // SubscriptionPlans SubscriptionPlans[]
 
   createdAt DateTime @default(now())
@@ -200,13 +201,14 @@ model ClientPlans {
 }
 
 model Plans {
-  id          String        @id @default(uuid())
-  title       String
-  price       Decimal
-  level       Int
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
-  ClientPlans ClientPlans[]
+  id            String          @id @default(uuid())
+  title         String
+  price         Decimal
+  level         Int
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+  ClientPlans   ClientPlans[]
+  Subscriptions Subscriptions[]
 }
 
 model ClientPayments {
@@ -220,10 +222,40 @@ model ClientPayments {
   invoice_id         String?
   transaction_id     String?
   stripe_customer_id String?
+  product_id         String?
+  city               String?
+  state              String?
+  zip                String?
+  country            String?
+  line1              String?
+  line2              String?
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
   // SubscriptionPlans SubscriptionPlans[]
+  Subscriptions Subscriptions[]
+}
+
+model Subscriptions {
+  id                   String         @id @default(uuid())
+  subscription_id      String         @unique
+  client_id            String         @unique
+  plan_id              String
+  isActive             Boolean
+  stripe_customer_id   String
+  client_payments_id   String
+  product_id           String
+  subscription_status  String
+  collection_method    String
+  currency             String
+  cancel_at_period_end Boolean?
+  current_period_end   DateTime?
+  canceled_at          DateTime?
+  client               Clients        @relation(fields: [client_id], references: [id])
+  plan                 Plans          @relation(fields: [plan_id], references: [id])
+  clientPayments       ClientPayments @relation(fields: [client_payments_id], references: [id])
+  createdAt            DateTime       @default(now())
+  updatedAt            DateTime       @updatedAt
 }
 
 // model SubscriptionPlans {
