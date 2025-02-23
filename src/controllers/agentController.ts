@@ -179,13 +179,13 @@ export const ShowAgents = async (req: Request, res: Response) => {
 
 export const VerifyClient = async (req: Request, res: Response) => {
   try {
-    const { id } = req.params;
-    if (!id) {
+    const { publicKey } = req.body;
+    if (!publicKey) {
       return res.status(400).send("Something went wrong")
     }
     const clients = await prisma.clients.findFirst({
       where: {
-        id: id
+        public_key: publicKey
       }
     })
     if (!clients) {
