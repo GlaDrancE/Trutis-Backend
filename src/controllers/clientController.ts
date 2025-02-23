@@ -587,7 +587,7 @@ export const GetCoupons = async (req: Request, res: Response) => {
     }
 }
 
-export const sendResetPasswordEmail = async (req: Request, res: Response) => {
+export const sendResetPasswordEmail = async (req: Request, res: Response): Promise<Response | void> => {
     const { email } = req.body;
 
     try {
@@ -694,8 +694,11 @@ export const getQrId = async (req: Request, res: Response) => {
     }
 };
 
+
 export const fetchCustomerFromCoupon = async (req: Request, res: Response): Promise<Response | void> => {
     const { code } = req.body.params;
+
+    // console.log(code);
 
     if (!code || typeof code !== 'string') {
         return res.status(400).json({ message: 'Coupon code is required' });
@@ -732,6 +735,7 @@ export const fetchCustomerFromCoupon = async (req: Request, res: Response): Prom
         return res.status(200).json({
             success: true,
             customer: customer ? {
+                id: customer.id,
                 name: customer.name,
                 email: customer.email,
                 phone: customer.phone,
@@ -744,5 +748,59 @@ export const fetchCustomerFromCoupon = async (req: Request, res: Response): Prom
             success: false,
             message: 'Internal server error'
         });
+    }
+}
+
+
+export const updatePoints = async (req: Request, res: Response): Promise<Response | void> => {
+    const { customerId, points, name, email, amount } = req.body;
+
+    // console.log(customerId, points);
+
+    if (!customerId || !points || isNaN(points)) {
+        return res.status(400).json({ message: 'Invalid customer ID or points value' });
+    }
+
+    try {
+
+        const existingPoints = await prisma.points.findUnique({
+            where: { customerId },
+        });
+
+        if (existingPoints) {
+
+            await prisma.points.update({
+                where: { customerId },
+                data: {
+                    points: {
+                        increment: points,
+                    },
+                    updatedAt: new Date(),
+                },
+            });
+        } else {
+
+            await prisma.points.create({
+                data: {
+                    customerId,
+                    points,
+                },
+            });
+        }
+
+        const emailSent = await sendEmail(
+            email,
+            'Points Added to Your Account',
+            `Dear ${name},\n\nGreat news! ${points} points have been added to your account based on your recent purchase of ₹${amount}. Thank you for shopping with us!\n\nCheck your account for the latest balance.\n\nBest regards,\nThe Team`
+        );
+
+        if (!emailSent) {
+            console.warn('Points updated but email failed to send');
+        }
+
+        return res.status(200).json({ success: true });
+    } catch (error) {
+        console.error('Error updating points:', error);
+        return res.status(500).json({ message: 'Internal server error' });
     }
 }

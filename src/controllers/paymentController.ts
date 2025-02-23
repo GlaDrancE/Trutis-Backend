@@ -26,9 +26,9 @@ export const createProducts = async (req: Request, res: Response): Promise<Respo
 
         res.json({
             products: [
-                { product: product1, price: price1.unit_amount },
-                { product: product2, price: price2.unit_amount },
-                { product: product3, price: price3.unit_amount },
+                { product: product1, price: (price1.unit_amount ?? 0) / 100 },
+                { product: product2, price: (price2.unit_amount ?? 0) / 100 },
+                { product: product3, price: (price3.unit_amount ?? 0) / 100 },
             ],
         });
 
@@ -37,7 +37,6 @@ export const createProducts = async (req: Request, res: Response): Promise<Respo
         res.status(500).send("Something went wrong");
     }
 };
-
 
 export const createPaymentSession = async (req: Request, res: Response): Promise<Response | void> => {
     try {
@@ -69,7 +68,8 @@ export const createPaymentSession = async (req: Request, res: Response): Promise
             },
             success_url: `${process.env.FRONTEND_URL}/payment?success=true&session_id={CHECKOUT_SESSION_ID}`,
             cancel_url: `${process.env.FRONTEND_URL}/payment?cancel=true`,
-            metadata: { client_id: clientId }
+            metadata: { client_id: clientId },
+            currency: 'inr',
         });
 
         res.json({ url: session.url });
@@ -92,11 +92,13 @@ export const createPortalSession = async (req: Request, res: Response): Promise<
         //         trial_period_days: 7,
         //     }
         // })
+        // console.log("customerId", customerId)
 
         const portalSession = await stripe.billingPortal.sessions.create({
             customer: customerId,
             return_url: returnUrl,
         });
+        // console.log("portalSession", portalSession)
         if (portalSession.url) {
             res.status(200).json({ url: portalSession.url as string });
         } else {
@@ -292,7 +294,9 @@ export const verifyPayment = async (req: Request, res: Response) => {
     const { session_id } = req.body;
 
     try {
-        const session = await stripe.checkout.sessions.retrieve(session_id);
+        const session = await stripe.checkout.sessions.retrieve(session_id, {
+            expand: ['subscription'], // Subscription is already expanded here
+        });
 
 
 
@@ -300,13 +304,13 @@ export const verifyPayment = async (req: Request, res: Response) => {
             // await savePaymentToDatabase(session);
             return res.json({ success: true, sessionId: session_id, customerId: session.customer as string });
         } else {
-            return res.json({ success: false, message: "Payment not completed." });
+            return res.json({ success: false, message: "Session not completed." });
         }
     } catch (error) {
         console.error("Error verifying payment:", error);
         return res.status(500).json({ success: false, message: "Server error." });
     }
-}
+};
 
 // async function savePaymentToDatabase(session: Stripe.Checkout.Session): Promise<void> {
 //     try {
