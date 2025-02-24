@@ -14,10 +14,16 @@ const products = new StripeProducts(stripe);
 
 export const createProducts = async (req: Request, res: Response): Promise<Response | void> => {
     try {
+<<<<<<< HEAD
         const clientId = req.body.clientId;
         const product1 = await products.createProduct("Plan Basic", "Basic subscription plan", 1000, 1, clientId);
         const product2 = await products.createProduct("Plan Standard", "Standard subscription plan", 2000, 1, clientId);
         const product3 = await products.createProduct("Plan Premium", "Premium subscription plan", 3000, 1, clientId);
+=======
+        const product1 = await products.createProduct("Plan Basic", "Basic subscription plan", 1000 * 100, 1); 
+        const product2 = await products.createProduct("Plan Standard", "Standard subscription plan", 2000 * 100, 1);
+        const product3 = await products.createProduct("Plan Premium", "Premium subscription plan", 3000 * 100, 1); 
+>>>>>>> 703d4101190a89291feeb07e9bf0c321a27e14a6
 
         // Fetch the price details using priceId
         const price1 = await stripe.prices.retrieve(product1.default_price as string);

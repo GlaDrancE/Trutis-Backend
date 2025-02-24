@@ -13,6 +13,7 @@ const tokenSecret = process.env.JWT_SECRET || null;
 if (!tokenSecret) {
   throw new Error('TOKEN_SECRET environment variable is not defined.');
 }
+
 export const AgentLogin = async (req: Request, res: Response) => {
 
   try {

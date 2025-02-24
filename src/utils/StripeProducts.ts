@@ -1,6 +1,13 @@
 import Stripe from 'stripe';
+<<<<<<< HEAD
 class StripeProducts {
   stripe: Stripe;
+=======
+
+export default class StripeProducts {
+  private stripe: Stripe;
+
+>>>>>>> 703d4101190a89291feeb07e9bf0c321a27e14a6
   constructor(stripe: Stripe) {
     this.stripe = stripe;
   }
