@@ -9,16 +9,17 @@ import { uploadFileToGCS } from '../utils/googleCloudStorage';
 export const storeCustomers = async (req: Request, res: Response): Promise<Response | void> => {
     try {
         const { clientId, code, email, name, phone, DOB, ratings } = req.body
+
         const reviewImage = req.file;
         console.log(req.file)
-        if (reviewImage) {
-            const imageUrl = await uploadFileToGCS(reviewImage, `reviews-images/sample-image`)
-            console.log("Image URL: ", imageUrl)
-            return res.status(200).send({
-                message: "Image uploaded successfully",
-                imageUrl: imageUrl
-            })
-        }
+        // if (reviewImage) {
+        //     const imageUrl = await uploadFileToGCS(reviewImage, `reviews-images/sample-image`)
+        //     console.log("Image URL: ", imageUrl)
+        // return res.status(200).send({
+        //     message: "Image uploaded successfully",
+        //     imageUrl: imageUrl
+        // })
+        // }
 
         if (!clientId || !email || !name || !phone || !DOB || !ratings) {
             return res.status(400).send({
@@ -63,8 +64,8 @@ export const storeCustomers = async (req: Request, res: Response): Promise<Respo
                 email: email,
                 name: name,
                 phone: phone,
-                DOB: new Date(),
-                ratings: ratings
+                DOB: new Date(DOB),
+                ratings: parseInt(ratings, 10)
             }
         })
 
@@ -83,12 +84,13 @@ export const storeCustomers = async (req: Request, res: Response): Promise<Respo
         if (!validityDate) {
             return res.status(400).send("Invalid coupon")
         }
+
         const coupon = await prisma.coupons.create({
             data: {
                 code: code,
                 validTill: validityDate,
-                maxDiscount: 50,
-                minOrderValue: 100,
+                maxDiscount: getClient.maxDiscount || 10,
+                minOrderValue: getClient.minOrderValue || 100,
             }
         })
         const couponClient = await prisma.couponClients.create({
@@ -117,9 +119,25 @@ export const storeCustomers = async (req: Request, res: Response): Promise<Respo
                 points: 0
             }
         })
+
         if (!coupon) {
             return res.status(400).send("Failed to create coupon");
         }
+
+        const emailContent = `
+                    Dear ${name},
+                    Thank you for your feedback! Here's your 10% discount coupon code: ${code}.
+                    Valid till: ${validityDate.toDateString()}
+                    Enjoy your discount!
+                `;
+
+
+
+        await sendMail(
+            email,
+            'Your Discount Coupon Code',
+            emailContent,
+        );
 
         res.status(201).send("Coupon created successfully")
 

@@ -25,6 +25,8 @@ clientRoutes.post("/coupon/verify", fetchCustomerFromCoupon as RequestHandler)
 // points
 clientRoutes.post("/points/update", updatePoints as RequestHandler)
 
+clientRoutes.post("/coupon/verify", fetchCustomerFromCoupon as RequestHandler)
+
 // Staff routes
 clientRoutes.post("/client/create-staff", UpdateStaff as RequestHandler)
 

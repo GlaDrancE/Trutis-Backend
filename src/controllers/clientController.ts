@@ -526,10 +526,12 @@ export const CreateClientPublicKey = async (req: Request, res: Response) => {
             return res.status(404).send("Client not found")
         }
         const publicKey = generateRandom(8);
+
         await prisma.clients.update({
             where: { id: clientId },
             data: { public_key: publicKey }
         })
+        console.log("Public Key Created", publicKey)
         res.status(200).json({ msg: "Public Key Created", public_key: publicKey })
     } catch (error) {
         console.log(error)
@@ -692,11 +694,8 @@ export const getQrId = async (req: Request, res: Response) => {
     }
 };
 
-
 export const fetchCustomerFromCoupon = async (req: Request, res: Response): Promise<Response | void> => {
     const { code } = req.body.params;
-
-    // console.log(code);
 
     if (!code || typeof code !== 'string') {
         return res.status(400).json({ message: 'Coupon code is required' });
@@ -786,6 +785,7 @@ export const updatePoints = async (req: Request, res: Response): Promise<Respons
             });
         }
 
+        
         const emailSent = await sendEmail(
             email,
             'Points Added to Your Account',

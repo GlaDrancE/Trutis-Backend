@@ -1,7 +1,7 @@
 import express, { RequestHandler } from "express";
 import cors from "cors";
 import bodyParser, { json } from "body-parser";
-import "./jobs/cronJob"
+// import "./jobs/cronJob"
 
 import authRoutes from "./routes/authRoutes";
 import agentRoutes from "./routes/agentRoutes";

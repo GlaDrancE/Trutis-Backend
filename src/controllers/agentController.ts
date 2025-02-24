@@ -13,6 +13,7 @@ const tokenSecret = process.env.JWT_SECRET || null;
 if (!tokenSecret) {
   throw new Error('TOKEN_SECRET environment variable is not defined.');
 }
+
 export const AgentLogin = async (req: Request, res: Response) => {
 
   try {
@@ -44,7 +45,7 @@ export const AgentLogin = async (req: Request, res: Response) => {
       { expiresIn: '1h' }
     );
 
-    res.json({ token , agentId: agent.id});
+    res.json({ token, agentId: agent.id });
   } catch (error) {
     console.error('Login error:', error);
     res.status(500).json({ error: 'Internal server error.' });
@@ -200,9 +201,9 @@ export const VerifyClient = async (req: Request, res: Response) => {
 
 export const linkQRCode = async (req: Request, res: Response) => {
   try {
-    const { clientId, QRId, agentId } = req.body;
+    const { publicKey, QRId, agentId } = req.body;
 
-    if (!clientId || !QRId) {
+    if (!publicKey || !QRId) {
       return res.status(400).json({ error: "Client ID and QR ID are required." });
     }
 
@@ -215,19 +216,19 @@ export const linkQRCode = async (req: Request, res: Response) => {
     }
 
     const updatedClient = await prisma.clients.update({
-      where: { id: clientId },
+      where: { public_key: publicKey },
       data: { qr_id: QRId }
     });
 
     const updatedQRCode = await prisma.qRCodes.update({
       where: { private_key: QRId },
-      data: { client_id: clientId }
+      data: { client_id: updatedClient?.id }
     });
 
     const newAgentClient = await prisma.agentClients.create({
       data: {
         agent_id: agentId,
-        client_id: clientId,
+        client_id: updatedClient?.id,
       },
     });
 
@@ -299,7 +300,7 @@ export const getAgentProfile = async (req: Request, res: Response) => {
 
 export const updateAgentStatus = async (req: Request, res: Response) => {
   const { agentId } = req.params;
-  const { newStatus : isActive } = req.body;
+  const { newStatus: isActive } = req.body;
 
   try {
     const updatedAgent = await prisma.agent.update({
