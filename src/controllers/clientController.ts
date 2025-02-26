@@ -50,12 +50,31 @@ export const GetClient = async (req: Request, res: Response) => {
             where: {
                 id: id
             },
-            include: {
+            select: {
+                id: true,
+                email: true,
+                shop_name: true,
+                owner_name: true,
+                address: true,
+                phone: true,
+                logo: true,
+                googleAPI: true,
+                ipAddress: true,
+                contractTime: true,
+                authProvider: true,
+                isActive: true,
+                minOrderValue: true,
+                maxDiscount: true,
+                couponValidity: true,
+                qr_id: true,
+                public_key: true,
+                customer_id: true,
                 AgentClients: {
                     include: {
-                        agent: true,
+                        agent: true
                     }
-                }
+                },
+                password: false
             }
         })
         if (!client) {
@@ -296,7 +315,6 @@ export const CreateClient = async (req: Request, res: Response): Promise<Respons
             }
         });
         if (!AvailableQR) { return res.status(404).send("QR Not Available ") }
-        console.log("AVAILABLE QRS: ", AvailableQR)
         // console.log(AvailableQR)
         // if (!AvailableQR) {
         //     console.log("QR codes are not available")
@@ -406,7 +424,8 @@ export const UpdateClient = async (req: Request, res: Response): Promise<Respons
 
         const {
             email, shop_name, owner_name,
-            address, phone, googleAPI
+            address, phone, googleAPI, minOrderValue, maxDiscount,  
+            couponValidity
         } = req.body;
         const { id } = req.params;
 
@@ -441,7 +460,10 @@ export const UpdateClient = async (req: Request, res: Response): Promise<Respons
                 phone: phone,
                 address: address,
                 logo: logo,
-                googleAPI: googleAPI
+                googleAPI: googleAPI,
+                minOrderValue: minOrderValue,
+                maxDiscount: maxDiscount,
+                couponValidity: couponValidity
             },
         });
 

@@ -3,29 +3,25 @@ import prisma from '../db/prisma';
 import { calculatePoints, handleCouponValidation } from '../utils/calculatePoints';
 import sendMail from '../config/emailConfig';
 import { uploadFileToGCS } from '../utils/googleCloudStorage';
+import { CloudinaryUpload } from '../utils/cloudinary';
 
 
 
 export const storeCustomers = async (req: Request, res: Response): Promise<Response | void> => {
     try {
-        const { clientId, code, email, name, phone, DOB, ratings } = req.body
+        const { qr_id, code, email, name, phone, DOB, ratings } = req.body
 
         const reviewImage = req.file;
-        console.log(req.file)
-        // if (reviewImage) {
-        //     const imageUrl = await uploadFileToGCS(reviewImage, `reviews-images/sample-image`)
-        //     console.log("Image URL: ", imageUrl)
-        // return res.status(200).send({
-        //     message: "Image uploaded successfully",
-        //     imageUrl: imageUrl
-        // })
-        // }
+        if (reviewImage) {
+            const imageUrl = await CloudinaryUpload(reviewImage.filename)
 
-        if (!clientId || !email || !name || !phone || !DOB || !ratings) {
+        }
+
+        if (!qr_id || !email || !name || !phone || !DOB || !ratings) {
             return res.status(400).send({
                 message: "Missing fields",
                 field: [
-                    !clientId && "Client ID",
+                    !qr_id && "QR ID",
                     !email && "Email",
                     !phone && "Phone",
                     !name && "Name",
@@ -36,24 +32,10 @@ export const storeCustomers = async (req: Request, res: Response): Promise<Respo
 
         }
 
-        const getCustomer = await prisma.couponCustomers.findFirst({
+        const getCustomer = await prisma.customers.findFirst({
             where: {
-                OR: [
-                    {
-                        Customers: {
-                            email: email
-                        },
-                        Coupons: {
-                            code: code
-                        }
-                    }
-                ]
-            },
-            include: {
-                Coupons: true,
-                Customers: true
+                email: email
             }
-
         })
         if (getCustomer) {
             return res.status(400).send("Customer already exists")
@@ -74,7 +56,7 @@ export const storeCustomers = async (req: Request, res: Response): Promise<Respo
         }
         // TODO: apply redis client cache here
         const getClient = await prisma.clients.findFirst({
-            where: { id: clientId }
+            where: { qr_id: qr_id }
         })
 
         if (!getClient) {
@@ -95,7 +77,7 @@ export const storeCustomers = async (req: Request, res: Response): Promise<Respo
         })
         const couponClient = await prisma.couponClients.create({
             data: {
-                clientId: clientId,
+                clientId: getClient.id,
                 couponId: coupon.id,
                 isUsed: false,
                 usedAt: new Date(0)
@@ -126,8 +108,12 @@ export const storeCustomers = async (req: Request, res: Response): Promise<Respo
 
         const emailContent = `
                     Dear ${name},
-                    Thank you for your feedback! Here's your 10% discount coupon code: ${code}.
-                    Valid till: ${validityDate.toDateString()}
+                    Thank you for your feedback! Here's your ${getClient.maxDiscount}% discount coupon code: ${code}.
+                    Valid till: ${validityDate.toDateString()}.
+
+                    Coupon will be valid only for the first order.
+                    Coupon should be used only for order above ${getClient.minOrderValue}.
+
                     Enjoy your discount!
                 `;
 
@@ -148,24 +134,96 @@ export const storeCustomers = async (req: Request, res: Response): Promise<Respo
 }
 
 
+export const getClient = async (req: Request, res: Response): Promise<Response | void> => {
+    try {
+        const { qr_id } = req.body;
+        if (!qr_id) {
+            return res.status(400).send("QR ID is required")
+        }
+        const client = await prisma.clients.findFirst({
+            where: {
+                qr_id: qr_id
+            },
+        })
+        return res.status(200).send(client)
+    } catch (error) {
+        console.error(error)
+        return res.status(500).send("Something went wrong")
+    }
+}
+
+
 export const getCoupons = async (req: Request, res: Response): Promise<Response | void> => {
     try {
-        const { client_id } = req.body;
+        const { client_id } = req.params;
         if (!client_id) {
             return res.status(400).send("Client ID is required")
         }
-        const coupons = await prisma.couponClients.findMany({
+        // const coupons = await prisma.couponClients.findMany({
+        //     where: {
+        //         clientId: client_id
+        //     },
+        //     include: {
+        //         Coupon: true,
+        //     }
+        // })
+        const coupons = await prisma.coupons.findMany({
             where: {
-                clientId: client_id
+                CouponClients: {
+                    some: {
+                        clientId: client_id
+                    }
+                }
             },
             include: {
-                Coupon: true
+                CustomersCoupons: {
+                    include: {
+                        Customers: true
+                    }
+                }
             }
         })
+        // const customers
+
         if (!coupons) {
             return res.status(400).send("No coupons found")
         }
         return res.status(200).send(coupons)
+    } catch (error) {
+        console.error(error)
+        return res.status(500).send("Something went wrong")
+    }
+}
+
+
+export const redeemCoupon = async (req: Request, res: Response): Promise<Response | void> => {
+    try {
+        const { id } = req.body;
+        if (!id) {
+            return res.status(400).send("Coupon ID is required")
+        }
+        const coupon = await prisma.coupons.findFirst({
+            where: {
+                id: id
+            }
+        })
+        if (!coupon) {
+            return res.status(400).send("Coupon not found")
+        }
+        const couponClient = await prisma.couponClients.findFirst({
+            where: {
+                couponId: id
+            }
+        })
+        await prisma.coupons.updateMany({
+            where: {
+                id: coupon.id
+            },
+            data: {
+                isUsed: true
+            }
+        })
+        return res.status(200).send("Coupon redeemed successfully")
     } catch (error) {
         console.error(error)
         return res.status(500).send("Something went wrong")

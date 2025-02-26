@@ -125,6 +125,7 @@ model Coupons {
   validTill     DateTime
   maxDiscount   Int?
   minOrderValue Int?
+  isUsed        Boolean  @default(false)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

@@ -192,6 +192,7 @@ export const VerifyClient = async (req: Request, res: Response) => {
     if (!clients) {
       return res.status(404).send("Data not found")
     }
+
     res.status(200).json(clients)
 
   } catch (error) {
@@ -217,7 +218,7 @@ export const linkQRCode = async (req: Request, res: Response) => {
 
     const updatedClient = await prisma.clients.update({
       where: { public_key: publicKey },
-      data: { qr_id: QRId }
+      data: { qr_id: QRId, public_key: null }
     });
 
     const updatedQRCode = await prisma.qRCodes.update({
