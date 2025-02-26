@@ -5,7 +5,9 @@ export const CloudinaryUpload = async (filename: string) => {
     try {
         const imgPath = `./public/temp/${filename}`;
         const result = await cloudinary.uploader.upload(imgPath)
-        // fs.unlinkSync(imgPath)
+        if (fs.existsSync(imgPath)) {
+            fs.unlinkSync(imgPath)
+        }
 
         return result.url;
     } catch (error) {
