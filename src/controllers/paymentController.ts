@@ -267,7 +267,7 @@ export const webhook = async (req: Request, res: Response) => {
         console.error('Error processing event:', error);
     }
 
-    res.json({ received: true });
+    res.status(200).json({ received: true });
 }
 
 
