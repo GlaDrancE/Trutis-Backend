@@ -16,13 +16,21 @@ import { webhook } from "./controllers/paymentController";
 
 const app = express();
 const PORT = process.env.PORT || 5000;
-app.use(
-  cors({
-    // origin: ["http://localhost:5174", "http://localhost:5173", process.env.FRONTEND_URL as string, 'http://localhost:5175'],
-    origin: '*',
-    credentials: true,
-  })
-);
+// app.use(
+//   cors({
+//     // origin: ["http://localhost:5174", "http://localhost:5173", process.env.FRONTEND_URL as string, 'http://localhost:5175'],
+//     origin: '*',
+//     credentials: true,
+//   })
+// );
+
+app.use(cors({
+  origin: 'https://trutisclient.vercel.app', // Allow frontend origin
+  methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
+  credentials: true, // Allow cookies if needed
+  allowedHeaders: 'Content-Type,Authorization'
+}));
+
 app.post("/api/webhook", bodyParser.raw({ type: 'application/json' }), webhook as RequestHandler)
 
 app.use(json());
