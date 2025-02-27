@@ -25,7 +25,7 @@ const PORT = process.env.PORT || 5000;
 // );
 
 app.use(cors({
-  origin: 'https://trutisclient.vercel.app', // Allow frontend origin
+  origin: [process.env.CLIENT_URL as string, process.env.AGENT_URL as string, process.env.ADMIN_URL as string], // Allow frontend origin
   methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
   credentials: true, // Allow cookies if needed
   allowedHeaders: 'Content-Type,Authorization'
