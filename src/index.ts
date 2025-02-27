@@ -1,3 +1,6 @@
+import * as dotenv from 'dotenv'
+import path from 'path';
+dotenv.config({ path: path.resolve(__dirname, '../.env') })
 import express, { RequestHandler } from "express";
 import cors from "cors";
 import bodyParser, { json } from "body-parser";
@@ -13,7 +16,6 @@ import { webhook } from "./controllers/paymentController";
 
 const app = express();
 const PORT = process.env.PORT || 5000;
-
 app.post("/api/webhook", bodyParser.raw({ type: 'application/json' }), webhook as RequestHandler)
 
 app.use(json());

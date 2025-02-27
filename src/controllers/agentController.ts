@@ -11,7 +11,7 @@ import redisClient from "../utils/caching";
 // Make sure TOKEN_SECRET is defined in your environment
 const tokenSecret = process.env.JWT_SECRET || null;
 if (!tokenSecret) {
-  throw new Error('TOKEN_SECRET environment variable is not defined.');
+  throw new Error('JWT_SECRET environment variable is not defined.');
 }
 
 export const AgentLogin = async (req: Request, res: Response) => {
