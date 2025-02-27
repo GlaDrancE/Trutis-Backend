@@ -66,8 +66,8 @@ export const createPaymentSession = async (req: Request, res: Response): Promise
                 trial_period_days: 7,
                 metadata: { client_id: clientId }
             },
-            success_url: `${process.env.FRONTEND_URL}/payment?success=true&session_id={CHECKOUT_SESSION_ID}`,
-            cancel_url: `${process.env.FRONTEND_URL}/payment?cancel=true`,
+            success_url: `${process.env.CLIENT_URL}/payment?success=true&session_id={CHECKOUT_SESSION_ID}`,
+            cancel_url: `${process.env.CLIENT_URL}/payment?cancel=true`,
             metadata: { client_id: clientId },
             currency: 'inr',
         });
@@ -83,7 +83,7 @@ export const createPortalSession = async (req: Request, res: Response): Promise<
     try {
         const { customerId } = req.body;
         console.log(customerId)
-        const returnUrl = `${process.env.FRONTEND_URL}/dashboard`;
+        const returnUrl = `${process.env.CLIENT_URL}/dashboard`;
         // const checkoutSession = await stripe.checkout.sessions.create({
         //     customer: customerId,
         //     return_url: returnUrl,
