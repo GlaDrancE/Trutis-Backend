@@ -261,6 +261,8 @@ export const webhook = async (req: Request, res: Response) => {
             default:
                 console.log(`Unhandled event type: ${event.type}`);
         }
+        console.log("Received Endpoint")
+        res.status(200).send("Received endpoint")
     } catch (error) {
         console.error('Error processing event:', error);
     }
