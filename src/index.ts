@@ -16,11 +16,6 @@ import { webhook } from "./controllers/paymentController";
 
 const app = express();
 const PORT = process.env.PORT || 5000;
-app.post("/api/webhook", bodyParser.raw({ type: 'application/json' }), webhook as RequestHandler)
-
-app.use(json());
-app.use(express.json({ limit: '50mb' })); // Increase the limit
-app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 app.use(
   cors({
     // origin: ["http://localhost:5174", "http://localhost:5173", process.env.FRONTEND_URL as string, 'http://localhost:5175'],
@@ -28,6 +23,12 @@ app.use(
     credentials: true,
   })
 );
+app.post("/api/webhook", bodyParser.raw({ type: 'application/json' }), webhook as RequestHandler)
+
+app.use(json());
+app.use(express.json({ limit: '50mb' })); // Increase the limit
+app.use(express.urlencoded({ extended: true, limit: '50mb' }));
+
 
 app.use("/api/auth", authRoutes);
 app.use("/api", agentRoutes);
