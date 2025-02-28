@@ -90,7 +90,11 @@ model Clients {
   customer_id    String?            @unique
   shop_name      String?
   owner_name     String
-  address        String?
+  line1          String?            
+  city           String?            
+  state          String?            
+  country        String?            
+  pincode        String?            
   phone          String?
   email          String             @unique
   logo           String?
@@ -117,7 +121,6 @@ model Clients {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
-
 model Coupons {
   id            String   @id @default(uuid())
   code          String

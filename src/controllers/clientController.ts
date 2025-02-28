@@ -44,7 +44,7 @@ export const GetClient = async (req: Request, res: Response) => {
     try {
         const { id } = req.params;
         if (!id) {
-            return res.status(400).send("Id not found, Invalid request")
+            return res.status(400).send("Id not found, Invalid request");
         }
         const client = await prisma.clients.findUnique({
             where: {
@@ -55,7 +55,11 @@ export const GetClient = async (req: Request, res: Response) => {
                 email: true,
                 shop_name: true,
                 owner_name: true,
-                address: true,
+                line1: true,       // Split address fields
+                city: true,
+                state: true,
+                country: true,
+                pincode: true,
                 phone: true,
                 logo: true,
                 googleAPI: true,
@@ -76,17 +80,16 @@ export const GetClient = async (req: Request, res: Response) => {
                 },
                 password: false
             }
-        })
+        });
         if (!client) {
-            return res.status(404).send("Client Not Found")
+            return res.status(404).send("Client Not Found");
         }
-        res.status(200).json(client)
+        res.status(200).json(client);
     } catch (error) {
-        console.error(error)
-        res.status(500).send("Internal server error")
-
+        console.error(error);
+        res.status(500).send("Internal server error");
     }
-}
+};
 
 
 export const ClientLogin = async (req: Request, res: Response) => {
@@ -151,23 +154,36 @@ export const ClientLogin = async (req: Request, res: Response) => {
 
 export const CreateInitClient = async (req: Request, res: Response): Promise<Response | void> => {
     try {
-        const { email, owner_name, password, address, logo, ipAddress, contractTime, authProvider, shop_name } = req.body;
+        const {
+            email,
+            owner_name,
+            password,
+            line1,
+            city,
+            state,
+            country,
+            pincode,
+            logo,
+            ipAddress,
+            contractTime,
+            authProvider,
+            shop_name
+        } = req.body;
 
-        // Validate input data
-        if (!email || !owner_name || !password || !address || !shop_name) {
+
+        if (!email || !owner_name || !password || !shop_name) {
             return res.status(400).json({
                 error: "Missing required fields",
                 missingFields: [
                     !email && "email",
                     !owner_name && "owner_name",
                     !password && "password",
-                    !address && "address",
                     !shop_name && "shop_name"
                 ].filter(Boolean)
             });
         }
 
-        // Check if the client already exists
+
         const existingClient = await prisma.clients.findFirst({
             where: { email: email }
         });
@@ -175,13 +191,16 @@ export const CreateInitClient = async (req: Request, res: Response): Promise<Res
             return res.status(400).json({ error: "Client already exists" });
         }
 
-        // Create the new client
         const newClient = await prisma.clients.create({
             data: {
                 email: email,
                 owner_name: owner_name,
                 shop_name: shop_name,
-                address: address,
+                line1: line1,
+                city: city,
+                state: state,
+                country: country,
+                pincode: pincode,
                 password: await bcrypt.hash(password, 10),
                 isActive: false,
                 logo: logo,
@@ -191,17 +210,19 @@ export const CreateInitClient = async (req: Request, res: Response): Promise<Res
             }
         });
 
-        if (!JWT_SECRET) {
-            console.log("Failed to load token")
-            return res.status(400).send("Failed to load token")
+        if (!process.env.JWT_SECRET) { // Assuming JWT_SECRET is in environment variables
+            console.log("Failed to load token");
+            return res.status(400).send("Failed to load token");
         }
-        const token = jwt.sign({ userId: newClient.id }, JWT_SECRET, { expiresIn: '1d' })
+        const token = jwt.sign({ userId: newClient.id }, process.env.JWT_SECRET, { expiresIn: '1d' });
         res.status(201).json({ token: token, userId: newClient.id });
     } catch (error) {
         console.error("Something went wrong: ", error);
         res.status(500).send("Internal server error");
     }
 };
+
+
 export const CreateGoogleClient = async (req: Request, res: Response): Promise<Response | void> => {
     try {
         const { email, owner_name, password, logo, ipAddress, authProvider, token, contractTime } = req.body;
@@ -258,15 +279,16 @@ export const CreateClient = async (req: Request, res: Response): Promise<Respons
     try {
         const {
             email, password, shop_name, owner_name,
-            address, phone, googleAPI, plan_id, agent_id
+            line1, city, state, country, pincode, // Split address fields
+            phone, googleAPI, plan_id, agent_id
         } = req.body;
         const imgPath = req.file?.originalname;
-        let logo = await CloudinaryUpload(imgPath as string)
+        let logo = await CloudinaryUpload(imgPath as string);
         if (!logo) {
-            console.log("Failed to upload image")
-            logo = "Error string"
+            console.log("Failed to upload image");
+            logo = "Error string";
         }
-        if (!email || !password || !owner_name || !address || !phone || !plan_id) {
+        if (!email || !password || !owner_name || !phone || !plan_id) {
             return res.status(400).json({
                 error: "Missing required fields",
                 missingFields: [
@@ -274,7 +296,6 @@ export const CreateClient = async (req: Request, res: Response): Promise<Respons
                     !password && "password",
                     !shop_name && "shop_name",
                     !owner_name && "owner_name",
-                    !address && "address",
                     !phone && "phone",
                     !plan_id && "plan_id"
                 ].filter(Boolean)
@@ -285,7 +306,6 @@ export const CreateClient = async (req: Request, res: Response): Promise<Respons
             password,
             shop_name,
             owner_name,
-            address,
             phone
         };
 
@@ -297,52 +317,56 @@ export const CreateClient = async (req: Request, res: Response): Promise<Respons
             where: {
                 id: plan_id
             }
-        })
+        });
         if (!plan) {
-            return res.status(404).send("Subscription Plan not found")
+            return res.status(404).send("Subscription Plan not found");
         }
         const existingUser = await prisma.clients.findFirst({
             where: {
                 email: email,
             }
-        })
+        });
         if (existingUser) {
-            return res.status(400).send("User already exists")
+            return res.status(400).send("User already exists");
         }
         let AvailableQR = await prisma.qRCodes.findFirst({
             where: {
                 client_id: null
             }
         });
-        if (!AvailableQR) { return res.status(404).send("QR Not Available ") }
-        // console.log(AvailableQR)
-        // if (!AvailableQR) {
-        //     console.log("QR codes are not available")
-        //     console.log("Generating...");
+        if (!AvailableQR) { return res.status(404).send("QR Not Available "); }
+        console.log(AvailableQR);
+        if (!AvailableQR) {
+            console.log("QR codes are not available");
+            console.log("Generating...");
 
-        //     const public_key = generateRandom(4);
-        //     const private_key = public_key + generateRandom(4);
+            const public_key = generateRandom(4);
+            const private_key = public_key + generateRandom(4);
 
-        //     AvailableQR = await prisma.qRCodes.create({
-        //         data: {
-        //             public_key: public_key,
-        //             private_key: private_key
-        //         }
-        //     })
-        // }
+            AvailableQR = await prisma.qRCodes.create({
+                data: {
+                    public_key: public_key,
+                    private_key: private_key
+                }
+            });
+        }
 
         const newClient = await prisma.clients.create({
             data: {
                 shop_name: shop_name,
                 qr_id: AvailableQR?.public_key,
                 owner_name: owner_name,
-                address: address,
+                line1: line1,       // Store separate address fields
+                city: city,
+                state: state,
+                country: country,
+                pincode: pincode,
                 phone: phone,
                 email: email,
                 logo: logo,
                 isActive: true,
                 ipAddress: "",
-                contractTime: Date(),
+                contractTime: new Date(), // Updated to use new Date() for consistency
                 googleAPI: googleAPI,
                 password: await bcrypt.hash(password, 10),
             },
@@ -356,7 +380,7 @@ export const CreateClient = async (req: Request, res: Response): Promise<Respons
                 plan_id: plan_id,
                 isActive: true
             }
-        })
+        });
         const qrUpdate = await prisma.qRCodes.update({
             where: {
                 id: AvailableQR?.id
@@ -364,16 +388,16 @@ export const CreateClient = async (req: Request, res: Response): Promise<Respons
             data: {
                 client_id: newClient.id
             }
-        })
+        });
         await prisma.agentClients.create({
             data: {
                 client_id: newClient.id,
                 agent_id: agent_id,
             }
-        })
+        });
         res.status(201).json({ msg: "Client Created", public_id: qrUpdate.public_key });
     } catch (error) {
-        console.log(error)
+        console.log(error);
         res.status(500).send("Internal Server Error");
     }
 };
@@ -421,10 +445,10 @@ export const UpdateStaff = async (req: Request, res: Response): Promise<Response
 // Update a client
 export const UpdateClient = async (req: Request, res: Response): Promise<Response | void> => {
     try {
-
         const {
             email, shop_name, owner_name,
-            address, phone, googleAPI, minOrderValue, maxDiscount,  
+            line1, city, state, country, pincode, // Split address fields
+            phone, googleAPI, minOrderValue, maxDiscount,
             couponValidity
         } = req.body;
         const { id } = req.params;
@@ -433,23 +457,21 @@ export const UpdateClient = async (req: Request, res: Response): Promise<Respons
         let logo = await CloudinaryUpload(imgPath as string);
 
         if (logo) {
-            console.log("Error in updating logo")
-            logo = 'Error'
+            console.log("Error in updating logo");
+            logo = 'Error';
         }
 
-        if (!email || !shop_name || !owner_name || !address || !phone) {
+        if (!email || !shop_name || !owner_name || !phone) {
             return res.status(400).json({
                 error: "Missing required fields",
                 missingFields: [
                     !email && "email",
                     !shop_name && "shop_name",
                     !owner_name && "owner_name",
-                    !address && "address",
                     !phone && "phone",
                 ].filter(Boolean)
             });
         }
-
 
         const updatedClient = await prisma.clients.update({
             where: { id: id },
@@ -458,7 +480,11 @@ export const UpdateClient = async (req: Request, res: Response): Promise<Respons
                 owner_name: owner_name,
                 email: email,
                 phone: phone,
-                address: address,
+                line1: line1,
+                city: city,
+                state: state,
+                country: country,
+                pincode: pincode,
                 logo: logo,
                 googleAPI: googleAPI,
                 minOrderValue: minOrderValue,
@@ -469,7 +495,7 @@ export const UpdateClient = async (req: Request, res: Response): Promise<Respons
 
         res.status(200).send("Client Updated");
     } catch (error) {
-        console.log(error)
+        console.log(error);
         res.status(500).send("Internal Server Error");
     }
 };
@@ -780,7 +806,7 @@ export const updatePoints = async (req: Request, res: Response): Promise<Respons
             });
         }
 
-        
+
         const emailSent = await sendEmail(
             email,
             'Points Added to Your Account',
