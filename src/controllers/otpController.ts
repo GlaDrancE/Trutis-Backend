@@ -25,8 +25,8 @@ export const VerifyOtp = async (req: Request, res: Response) => {
             return res.status(400).send("Invalid OTP");
         }
         const verify = verifyOTP(email, otp);
-        if (!verify) {
-            return res.status(400).send("Invalid OTP");
+        if (!verify.valid) {
+            return res.status(400).send(verify.message);
         }
         res.status(200).send("OTP verified successfully");
     } catch (error) {
