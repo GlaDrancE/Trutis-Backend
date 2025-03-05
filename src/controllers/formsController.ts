@@ -9,15 +9,15 @@ import { CloudinaryUpload } from '../utils/cloudinary';
 
 export const storeCustomers = async (req: Request, res: Response): Promise<Response | void> => {
     try {
-        const { qr_id, code, email, name, phone, DOB, ratings } = req.body
+        const { qr_id, code, email, name, phone, DOB, reviewDescription } = req.body
 
         const reviewImage = req.file;
+        let imageUrl;
         if (reviewImage) {
-            const imageUrl = await CloudinaryUpload(reviewImage.filename)
-
+            imageUrl = await CloudinaryUpload(reviewImage.filename)
         }
 
-        if (!qr_id || !email || !name || !phone || !DOB || !ratings) {
+        if (!qr_id || !email || !name || !phone || !DOB) {
             return res.status(400).send({
                 message: "Missing fields",
                 field: [
@@ -26,7 +26,6 @@ export const storeCustomers = async (req: Request, res: Response): Promise<Respo
                     !phone && "Phone",
                     !name && "Name",
                     !DOB && "DOB",
-                    !ratings && "Ratings",
                 ]
             })
 
@@ -47,7 +46,8 @@ export const storeCustomers = async (req: Request, res: Response): Promise<Respo
                 name: name,
                 phone: phone,
                 DOB: new Date(DOB),
-                ratings: parseInt(ratings, 10)
+                reviewDescription: reviewDescription,
+                reviewImage: imageUrl ? imageUrl : ''
             }
         })
 

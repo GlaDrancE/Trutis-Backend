@@ -8,6 +8,7 @@ export const CloudinaryUpload = async (filename: string) => {
         if (fs.existsSync(imgPath)) {
             fs.unlinkSync(imgPath)
         }
+        console.log(result)
 
         return result.url;
     } catch (error) {

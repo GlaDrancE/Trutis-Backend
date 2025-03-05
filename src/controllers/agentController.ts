@@ -226,12 +226,15 @@ export const linkQRCode = async (req: Request, res: Response) => {
       data: { client_id: updatedClient?.id }
     });
 
-    const newAgentClient = await prisma.agentClients.create({
-      data: {
-        agent_id: agentId,
-        client_id: updatedClient?.id,
-      },
-    });
+    let newAgentClient;
+    if (agentId) {
+      newAgentClient = await prisma.agentClients.create({
+        data: {
+          agent_id: agentId,
+          client_id: updatedClient?.id,
+        },
+      });
+    }
 
     res.status(200).json({
       message: "QR Code linked successfully.",

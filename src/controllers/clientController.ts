@@ -73,6 +73,9 @@ export const GetClient = async (req: Request, res: Response) => {
                 qr_id: true,
                 public_key: true,
                 customer_id: true,
+                staffStatus : true,
+                staffId: true,
+                staffPassword: true,
                 AgentClients: {
                     include: {
                         agent: true
@@ -452,11 +455,15 @@ export const UpdateClient = async (req: Request, res: Response): Promise<Respons
             couponValidity
         } = req.body;
         const { id } = req.params;
+        console.log("UPdate Client: ", req.body)
+        const img = req.file;
+        console.log(img)
+        let logo;
+        if (img)
+            logo = await CloudinaryUpload(img.filename);
+        console.log(logo)
 
-        const imgPath = req.file?.originalname;
-        let logo = await CloudinaryUpload(imgPath as string);
-
-        if (logo) {
+        if (!logo) {
             console.log("Error in updating logo");
             logo = 'Error';
         }
@@ -487,9 +494,9 @@ export const UpdateClient = async (req: Request, res: Response): Promise<Respons
                 pincode: pincode,
                 logo: logo,
                 googleAPI: googleAPI,
-                minOrderValue: minOrderValue,
-                maxDiscount: maxDiscount,
-                couponValidity: couponValidity
+                minOrderValue: parseInt(minOrderValue),
+                maxDiscount: parseInt(maxDiscount), // TOdo: make it float
+                couponValidity: parseInt(couponValidity)
             },
         });
 
