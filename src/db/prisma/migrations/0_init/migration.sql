@@ -63,7 +63,11 @@ CREATE TABLE "Clients" (
     "customer_id" TEXT,
     "shop_name" TEXT,
     "owner_name" TEXT NOT NULL,
-    "address" TEXT,
+    "line1" TEXT,
+    "city" TEXT,
+    "state" TEXT,
+    "country" TEXT,
+    "pincode" TEXT,
     "phone" TEXT,
     "email" TEXT NOT NULL,
     "logo" TEXT,
@@ -79,6 +83,7 @@ CREATE TABLE "Clients" (
     "staffId" TEXT,
     "staffPassword" TEXT,
     "staffStatus" BOOLEAN,
+    "termsAndConditions" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
@@ -107,7 +112,8 @@ CREATE TABLE "Customers" (
     "name" TEXT NOT NULL,
     "phone" TEXT NOT NULL,
     "DOB" TIMESTAMP(3) NOT NULL,
-    "ratings" INTEGER NOT NULL,
+    "reviewDescription" TEXT,
+    "reviewImage" TEXT NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
@@ -309,3 +315,4 @@ ALTER TABLE "ClientPayments" ADD CONSTRAINT "ClientPayments_client_id_fkey" FORE
 
 -- AddForeignKey
 ALTER TABLE "ClientPayments" ADD CONSTRAINT "ClientPayments_subscription_id_fkey" FOREIGN KEY ("subscription_id") REFERENCES "Subscriptions"("subscription_id") ON DELETE SET NULL ON UPDATE CASCADE;
+
